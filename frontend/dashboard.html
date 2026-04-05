@@ -21,15 +21,15 @@
     <div id="tasks-list"></div>
 
     <!-- Chat fixo, fora dos cards — nunca é re-renderizado pelo polling de tarefas -->
-    <div id="chat-container" style="display:none;margin-top:20px;">
-      <div class="section-title">💬 Chat com o morador</div>
-      <div class="chat-box">
+    <div id="chat-container" style="display:none;">
+      <div class="chat-fullscreen">
+        <div class="chat-topbar">💬 Chat com o morador</div>
         <div class="chat-messages" id="chat-msgs"></div>
         <div class="chat-input-row">
           <label class="chat-attach" for="chat-file" title="Enviar foto">📎</label>
           <input type="file" id="chat-file" accept="image/*" style="display:none" onchange="sendMedia(this)">
           <input class="chat-text" type="text" id="chat-text" placeholder="Digite uma mensagem..." onkeydown="if(event.key==='Enter') sendMessage()">
-          <button class="chat-send" onclick="sendMessage()">Enviar</button>
+          <button class="chat-send" onclick="sendMessage()">➤</button>
         </div>
       </div>
     </div>
