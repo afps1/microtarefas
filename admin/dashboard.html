@@ -236,12 +236,44 @@
 
     function renderRunners() {
       document.getElementById("main-content").innerHTML = `
-        <div class="page-title">Parceiros</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+          <div class="page-title" style="margin:0">Parceiros</div>
+          <button class="btn btn-primary" style="width:auto;padding:10px 20px;" onclick="showRunnerForm()">+ Novo</button>
+        </div>
+        <div id="runner-form" style="display:none;" class="card" style="margin-bottom:20px;">
+          <div class="card-header">Novo Parceiro</div>
+          <div style="padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div class="form-group"><label>Nome</label><input type="text" id="r-name" /></div>
+            <div class="form-group"><label>Telefone (com DDD)</label><input type="text" id="r-phone" inputmode="numeric" /></div>
+            <div class="form-group"><label>E-mail</label><input type="email" id="r-email" /></div>
+            <div class="form-group"><label>Chave Pix</label><input type="text" id="r-pix" /></div>
+          </div>
+          <div style="padding:0 20px 20px;"><button class="btn btn-primary" onclick="createRunner()" style="max-width:200px;">Salvar</button></div>
+        </div>
         <div class="card">
           <table><thead><tr><th>Nome</th><th>E-mail</th><th>Telefone</th><th>Pix</th><th>Status</th><th>Ações</th></tr></thead>
           <tbody id="runners-tbody"></tbody></table>
         </div>`;
       loadRunners();
+    }
+
+    function showRunnerForm() {
+      const f = document.getElementById("runner-form");
+      f.style.display = f.style.display === "none" ? "block" : "none";
+    }
+
+    async function createRunner() {
+      const body = {
+        name: document.getElementById("r-name").value.trim(),
+        phone: document.getElementById("r-phone").value.trim(),
+        email: document.getElementById("r-email").value.trim(),
+        pix_key: document.getElementById("r-pix").value.trim() || null,
+        condominium_id: admin.condominium_id,
+      };
+      if (!body.name || !body.phone || !body.email) return alert("Nome, telefone e e-mail são obrigatórios");
+      const res = await apiFetch("/cadastro/parceiro", { method: "POST", body: JSON.stringify(body) });
+      if (res?.ok) { document.getElementById("runner-form").style.display = "none"; loadRunners(); }
+      else { const d = await res.json(); alert(d.detail || "Erro ao cadastrar"); }
     }
 
     async function loadRunners() {
@@ -268,12 +300,44 @@
 
     function renderResidents() {
       document.getElementById("main-content").innerHTML = `
-        <div class="page-title">Moradores</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+          <div class="page-title" style="margin:0">Moradores</div>
+          <button class="btn btn-primary" style="width:auto;padding:10px 20px;" onclick="showResidentForm()">+ Novo</button>
+        </div>
+        <div id="resident-form" style="display:none;" class="card" style="margin-bottom:20px;">
+          <div class="card-header">Novo Morador</div>
+          <div style="padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div class="form-group"><label>Nome</label><input type="text" id="res-name" /></div>
+            <div class="form-group"><label>Telefone (com DDD)</label><input type="text" id="res-phone" inputmode="numeric" /></div>
+            <div class="form-group"><label>Apartamento</label><input type="text" id="res-apt" /></div>
+            <div class="form-group"><label>E-mail (opcional)</label><input type="email" id="res-email" /></div>
+          </div>
+          <div style="padding:0 20px 20px;"><button class="btn btn-primary" onclick="createResident()" style="max-width:200px;">Salvar</button></div>
+        </div>
         <div class="card">
           <table><thead><tr><th>Nome</th><th>Telefone</th><th>Ap.</th><th>Ativo</th><th></th></tr></thead>
           <tbody id="residents-tbody"></tbody></table>
         </div>`;
       loadResidents();
+    }
+
+    function showResidentForm() {
+      const f = document.getElementById("resident-form");
+      f.style.display = f.style.display === "none" ? "block" : "none";
+    }
+
+    async function createResident() {
+      const body = {
+        name: document.getElementById("res-name").value.trim(),
+        phone: document.getElementById("res-phone").value.trim(),
+        apartment: document.getElementById("res-apt").value.trim(),
+        email: document.getElementById("res-email").value.trim() || null,
+        condominium_id: admin.condominium_id,
+      };
+      if (!body.name || !body.phone || !body.apartment) return alert("Nome, telefone e apartamento são obrigatórios");
+      const res = await apiFetch("/cadastro/morador", { method: "POST", body: JSON.stringify(body) });
+      if (res?.ok) { document.getElementById("resident-form").style.display = "none"; loadResidents(); }
+      else { const d = await res.json(); alert(d.detail || "Erro ao cadastrar"); }
     }
 
     async function loadResidents() {
