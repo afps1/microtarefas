@@ -125,32 +125,9 @@ async def _handle_solicitar(resident: models.Resident, gpt_result: dict, db: Ses
 
     label = TASK_LABELS.get(task_type, task_type)
     send_message(
-        resident.phone,
+        wa_phone(resident.phone),
         f"✅ Pedido recebido: *{label}*. Estamos buscando um parceiro disponível. Você será avisado em breve!",
     )
-
-    # Busca parceiros aprovados e envia magic links
-    runners = db.query(models.Runner).filter(
-        models.Runner.condominium_id == resident.condominium_id,
-        models.Runner.status == "approved",
-    ).all()
-
-    for runner in runners:
-        token = secrets.token_urlsafe(32)
-        expires_at = datetime.now(timezone.utc) + timedelta(minutes=MAGIC_LINK_EXPIRY_MINUTES)
-        magic = models.MagicLink(
-            task_id=task.id,
-            runner_id=runner.id,
-            token=token,
-            expires_at=expires_at,
-        )
-        db.add(magic)
-
-        link = f"{APP_URL}/task.html?token={token}"
-        send_message(
-            wa_phone(runner.phone),
-            f"🔔 Nova tarefa disponível: *{label}*\nAp. {resident.apartment}\n\nAcesse para aceitar: {link}\n\n_(Link válido por {MAGIC_LINK_EXPIRY_MINUTES} minutos)_",
-        )
 
     db.commit()
 
