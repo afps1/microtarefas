@@ -162,12 +162,12 @@ input:focus {
   bottom: 0;
   display: flex;
   flex-direction: column;
-  background: #ece5dd;
+  background: var(--bg);
   z-index: 100;
 }
 
 .chat-topbar {
-  background: #075e54;
+  background: var(--primary);
   color: #fff;
   padding: 14px 16px;
   font-size: 15px;
@@ -176,7 +176,7 @@ input:focus {
 }
 
 .chat-actions {
-  background: #fff;
+  background: var(--white);
   padding: 10px 16px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
@@ -193,7 +193,7 @@ input:focus {
 
 .chat-empty {
   font-size: 13px;
-  color: #666;
+  color: var(--muted);
   text-align: center;
   padding: 30px 0;
 }
@@ -216,8 +216,8 @@ input:focus {
 }
 
 .chat-mine span {
-  background: #dcf8c6;
-  color: #111;
+  background: var(--primary);
+  color: #fff;
   padding: 8px 12px;
   border-radius: 12px 12px 2px 12px;
   font-size: 14px;
@@ -225,12 +225,13 @@ input:focus {
 }
 
 .chat-theirs span {
-  background: #fff;
-  color: #111;
+  background: var(--white);
+  color: var(--text);
   padding: 8px 12px;
   border-radius: 12px 12px 12px 2px;
   font-size: 14px;
   word-break: break-word;
+  border: 1px solid var(--border);
 }
 
 .chat-img {
@@ -241,7 +242,7 @@ input:focus {
 
 .chat-time {
   font-size: 11px;
-  color: #888;
+  color: var(--muted);
   padding: 0 4px;
 }
 
@@ -250,7 +251,8 @@ input:focus {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background: #f0f0f0;
+  background: var(--white);
+  border-top: 1px solid var(--border);
   flex-shrink: 0;
   padding-bottom: max(8px, env(safe-area-inset-bottom));
 }
@@ -264,15 +266,19 @@ input:focus {
 .chat-text {
   flex: 1;
   padding: 10px 14px;
-  border: none;
+  border: 1.5px solid var(--border);
   border-radius: 24px;
   font-size: 15px;
   outline: none;
-  background: #fff;
+  background: var(--bg);
+}
+
+.chat-text:focus {
+  border-color: var(--primary);
 }
 
 .chat-send {
-  background: #075e54;
+  background: var(--primary);
   color: #fff;
   border: none;
   border-radius: 50%;
@@ -287,7 +293,7 @@ input:focus {
 }
 
 .chat-send:hover {
-  background: #128c7e;
+  background: var(--primary-dark);
 }
 
 .btn-link {
