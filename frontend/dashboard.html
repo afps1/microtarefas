@@ -19,6 +19,20 @@
   <main class="app-body">
     <div class="section-title">Tarefas disponíveis</div>
     <div id="tasks-list"></div>
+
+    <!-- Chat fixo, fora dos cards — nunca é re-renderizado pelo polling de tarefas -->
+    <div id="chat-container" style="display:none;margin-top:20px;">
+      <div class="section-title">💬 Chat com o morador</div>
+      <div class="chat-box">
+        <div class="chat-messages" id="chat-msgs"></div>
+        <div class="chat-input-row">
+          <label class="chat-attach" for="chat-file" title="Enviar foto">📎</label>
+          <input type="file" id="chat-file" accept="image/*" style="display:none" onchange="sendMedia(this)">
+          <input class="chat-text" type="text" id="chat-text" placeholder="Digite uma mensagem..." onkeydown="if(event.key==='Enter') sendMessage()">
+          <button class="chat-send" onclick="sendMessage()">Enviar</button>
+        </div>
+      </div>
+    </div>
   </main>
 
   <script>
@@ -55,10 +69,6 @@
         return;
       }
 
-      const execTask = tasks.find(t => t.status === "em_execucao" && t.is_mine);
-      if (execTask) startChatPolling(execTask.id);
-      else stopChatPolling();
-
       el.innerHTML = tasks.map(t => `
         <div class="task-card">
           <div class="task-type">${t.type}</div>
@@ -83,19 +93,9 @@
       }
       if (task.status === "em_execucao") {
         return `
-          <div style="display:flex;gap:10px;margin-bottom:16px;">
+          <div style="display:flex;gap:10px;">
             <button class="btn btn-primary" onclick="updateTask(${task.id}, 'concluido')">Marcar concluído</button>
             <button class="btn btn-cancel" onclick="cancelTask(${task.id})">Cancelar serviço</button>
-          </div>
-          <div class="chat-box">
-            <div class="chat-header">💬 Chat com o morador</div>
-            <div class="chat-messages" id="chat-msgs-${task.id}"></div>
-            <div class="chat-input-row">
-              <label class="chat-attach" for="chat-file-${task.id}" title="Enviar foto">📎</label>
-              <input type="file" id="chat-file-${task.id}" accept="image/*" style="display:none" onchange="sendMedia(${task.id}, this)">
-              <input class="chat-text" type="text" id="chat-text-${task.id}" placeholder="Digite uma mensagem..." onkeydown="if(event.key==='Enter') sendMessage(${task.id})">
-              <button class="chat-send" onclick="sendMessage(${task.id})">Enviar</button>
-            </div>
           </div>`;
       }
       if (task.status === "concluido") {
@@ -109,9 +109,11 @@
       return d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
     }
 
+    // ── Polling de tarefas ──
+
     let lastTaskIds = new Set();
     let lastTasksHash = "";
-    const POLL_INTERVAL = 8000; // 8 segundos
+    const POLL_INTERVAL = 8000;
 
     function vibrar() {
       if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
@@ -150,28 +152,21 @@
 
         // Detecta novas tarefas solicitadas
         const novos = data.filter(t => t.status === "solicitado" && !lastTaskIds.has(t.id));
-        if (novos.length > 0 && lastTaskIds.size > 0) {
-          notificarNovaTarefa();
-        }
+        if (novos.length > 0 && lastTaskIds.size > 0) notificarNovaTarefa();
         lastTaskIds = new Set(data.map(t => t.id));
 
-        // Só re-renderiza se algo mudou
+        // Só re-renderiza cards se algo mudou
         const hash = data.map(t => `${t.id}:${t.status}`).join(",");
-        if (hash === lastTasksHash) return;
-        lastTasksHash = hash;
-
-        // Preserva o texto digitado no chat antes de re-renderizar
-        const savedChatText = activeChatTaskId
-          ? (document.getElementById(`chat-text-${activeChatTaskId}`)?.value || "")
-          : "";
-
-        renderTasks(data);
-
-        // Restaura o texto após re-renderizar
-        if (activeChatTaskId && savedChatText) {
-          const input = document.getElementById(`chat-text-${activeChatTaskId}`);
-          if (input) input.value = savedChatText;
+        if (hash !== lastTasksHash) {
+          lastTasksHash = hash;
+          renderTasks(data);
         }
+
+        // Controla visibilidade do chat independentemente dos cards
+        const execTask = data.find(t => t.status === "em_execucao" && t.is_mine);
+        if (execTask) startChatPolling(execTask.id);
+        else stopChatPolling();
+
       } catch {
         document.getElementById("tasks-list").innerHTML =
           `<div class="empty-state"><p>Erro ao carregar tarefas.</p></div>`;
@@ -182,17 +177,15 @@
       try {
         const res = await fetch(`${API}/tasks/${taskId}/status`, {
           method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify({ status: newStatus }),
         });
         if (res.ok) {
+          lastTasksHash = ""; // força re-render na próxima chamada
           loadTasks();
         } else {
-          const data = await res.json();
-          alert(data.detail || "Erro ao atualizar tarefa.");
+          const d = await res.json();
+          alert(d.detail || "Erro ao atualizar tarefa.");
           loadTasks();
         }
       } catch {
@@ -206,30 +199,35 @@
     let chatInterval = null;
 
     function startChatPolling(taskId) {
+      document.getElementById("chat-container").style.display = "block";
       if (activeChatTaskId === taskId) return;
       activeChatTaskId = taskId;
       if (chatInterval) clearInterval(chatInterval);
-      loadMessages(taskId);
-      chatInterval = setInterval(() => loadMessages(taskId), 5000);
+      loadMessages();
+      chatInterval = setInterval(loadMessages, 5000);
     }
 
     function stopChatPolling() {
+      document.getElementById("chat-container").style.display = "none";
       if (chatInterval) clearInterval(chatInterval);
       chatInterval = null;
       activeChatTaskId = null;
     }
 
-    async function loadMessages(taskId) {
-      const el = document.getElementById(`chat-msgs-${taskId}`);
-      if (!el) { stopChatPolling(); return; }
+    async function loadMessages() {
+      if (!activeChatTaskId) return;
       try {
-        const res = await fetch(`${API}/tasks/${taskId}/messages`, {
+        const res = await fetch(`${API}/tasks/${activeChatTaskId}/messages`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) return;
         const msgs = await res.json();
-        el.innerHTML = msgs.length ? msgs.map(m => renderMsg(m)).join("") : `<div class="chat-empty">Nenhuma mensagem ainda.</div>`;
-        el.scrollTop = el.scrollHeight;
+        const el = document.getElementById("chat-msgs");
+        const atBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 40;
+        el.innerHTML = msgs.length
+          ? msgs.map(m => renderMsg(m)).join("")
+          : `<div class="chat-empty">Nenhuma mensagem ainda.</div>`;
+        if (atBottom) el.scrollTop = el.scrollHeight;
       } catch {}
     }
 
@@ -237,7 +235,7 @@
       const mine = m.sender === "parceiro";
       const time = new Date(m.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
       const bubble = m.type === "image"
-        ? `<img src="${API}/tasks/media/${m.content}?token=${token}" class="chat-img" onclick="this.requestFullscreen?.()">`
+        ? `<img src="${API}/tasks/media/${m.content}?token=${encodeURIComponent(token)}" class="chat-img" onclick="this.requestFullscreen?.()">`
         : `<span>${m.content}</span>`;
       return `<div class="chat-msg ${mine ? "chat-mine" : "chat-theirs"}">
         ${bubble}
@@ -245,34 +243,34 @@
       </div>`;
     }
 
-    async function sendMessage(taskId) {
-      const input = document.getElementById(`chat-text-${taskId}`);
+    async function sendMessage() {
+      const input = document.getElementById("chat-text");
       const content = input.value.trim();
-      if (!content) return;
+      if (!content || !activeChatTaskId) return;
       input.value = "";
       try {
-        await fetch(`${API}/tasks/${taskId}/message`, {
+        await fetch(`${API}/tasks/${activeChatTaskId}/message`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify({ content }),
         });
-        loadMessages(taskId);
+        loadMessages();
       } catch { alert("Erro ao enviar mensagem."); }
     }
 
-    async function sendMedia(taskId, input) {
+    async function sendMedia(input) {
       const file = input.files[0];
-      if (!file) return;
+      if (!file || !activeChatTaskId) return;
       input.value = "";
       const formData = new FormData();
       formData.append("file", file);
       try {
-        const res = await fetch(`${API}/tasks/${taskId}/message/media`, {
+        const res = await fetch(`${API}/tasks/${activeChatTaskId}/message/media`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
           body: formData,
         });
-        if (res.ok) loadMessages(taskId);
+        if (res.ok) loadMessages();
         else alert("Erro ao enviar imagem.");
       } catch { alert("Erro ao enviar imagem."); }
     }
@@ -284,8 +282,12 @@
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (res.ok) loadTasks();
-        else alert("Erro ao cancelar tarefa.");
+        if (res.ok) {
+          lastTasksHash = "";
+          loadTasks();
+        } else {
+          alert("Erro ao cancelar tarefa.");
+        }
       } catch {
         alert("Erro ao cancelar tarefa.");
       }
