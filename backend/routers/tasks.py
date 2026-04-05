@@ -161,7 +161,7 @@ def cancel_task(
     try:
         send_message(
             wa_phone(task.resident.phone),
-            f"⚠️ O parceiro precisou cancelar sua tarefa. Estamos buscando outro parceiro disponível.",
+            f"⚠️ O parceiro precisou cancelar sua tarefa. Estamos buscando outro parceiro disponível.\n\nSe quiser cancelar, é só responder *cancelar*.",
         )
     except Exception as e:
         import logging

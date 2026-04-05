@@ -223,7 +223,7 @@ async def _confirmar_pedido(resident: models.Resident, pending: models.PendingRe
     price_info = f" — *R$ {service.price / 100:.2f}*".replace(".", ",") if service else ""
     send_message(
         wa_phone(resident.phone),
-        f"✅ Pedido confirmado: *{label}*{price_info}. Estamos buscando um parceiro disponível. Você será avisado em breve!",
+        f"✅ Pedido confirmado: *{label}*{price_info}. Estamos buscando um parceiro disponível. Você será avisado em breve!\n\nSe quiser cancelar, é só responder *cancelar*.",
     )
     db.commit()
 
