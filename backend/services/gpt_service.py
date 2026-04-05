@@ -8,7 +8,7 @@ load_dotenv()
 
 API_KEY = os.getenv("OPENAI_API_KEY")
 MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-API_URL = os.getenv("OPENAI_API_URL", "https://api.openai.com/v1")
+API_URL = os.getenv("OPENAI_API_URL", "https://api.openai.com/v1/chat/completions")
 
 TASK_TYPES = ["lixo", "encomenda", "mercadinho", "outro"]
 
@@ -44,7 +44,7 @@ def interpret_message(text: str) -> dict:
     }).encode()
 
     req = urllib.request.Request(
-        f"{API_URL}/chat/completions",
+        API_URL,
         data=payload,
         headers={
             "Content-Type": "application/json",
@@ -55,7 +55,12 @@ def interpret_message(text: str) -> dict:
     try:
         with urllib.request.urlopen(req, timeout=10) as res:
             data = json.loads(res.read())
-            content = data["choices"][0]["message"]["content"]
+            content = data["choices"][0]["message"]["content"].strip()
+            # Remove markdown code block se o modelo retornar com ```json
+            if content.startswith("```"):
+                content = content.split("```")[1]
+                if content.startswith("json"):
+                    content = content[4:]
             return json.loads(content)
     except Exception as e:
         return {"intent": "outro", "task_type": None, "description": None, "error": str(e)}
