@@ -282,17 +282,19 @@ def delete_resident(
 def list_tasks(db: Session = Depends(get_db), admin=Depends(get_admin_condominio)):
     condo_id = _condo_id(admin)
     tasks = db.query(models.Task).filter(models.Task.condominium_id == condo_id).order_by(models.Task.created_at.desc()).all()
-    return [
-        {
+    result = []
+    for t in tasks:
+        rating = db.query(models.Rating).filter(models.Rating.task_id == t.id).first()
+        result.append({
             "id": t.id,
             "type": t.type,
             "status": t.status,
             "resident_name": t.resident.name,
             "runner_name": t.runner.name if t.runner else None,
             "created_at": t.created_at,
-        }
-        for t in tasks
-    ]
+            "rating": rating.score if rating else None,
+        })
+    return result
 
 
 # ── Stats ──

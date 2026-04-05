@@ -534,7 +534,7 @@
       document.getElementById("main-content").innerHTML = `
         <div class="page-title">Tarefas</div>
         <div class="card">
-          <table><thead><tr><th>Tipo</th><th>Morador</th><th>Parceiro</th><th>Status</th><th>Data</th></tr></thead>
+          <table><thead><tr><th>Tipo</th><th>Morador</th><th>Parceiro</th><th>Status</th><th>Nota</th><th>Data</th></tr></thead>
           <tbody id="tasks-tbody"></tbody></table>
         </div>`;
       loadTasks();
@@ -545,12 +545,13 @@
       if (!res) return;
       const data = await res.json();
       const tbody = document.getElementById("tasks-tbody");
-      if (!data.length) { tbody.innerHTML = `<tr class="empty-row"><td colspan="5">Nenhuma tarefa.</td></tr>`; return; }
+      if (!data.length) { tbody.innerHTML = `<tr class="empty-row"><td colspan="6">Nenhuma tarefa.</td></tr>`; return; }
       const statusPt = { solicitado:"Solicitado", aceito:"Aceito", em_execucao:"Em execução", concluido:"Concluído", recebido:"Recebido" };
       tbody.innerHTML = data.map(t => `
         <tr>
           <td>${t.type}</td><td>${t.resident_name}</td><td>${t.runner_name || "—"}</td>
           <td>${statusPt[t.status] || t.status}</td>
+          <td>${t.rating ? "⭐".repeat(t.rating) : "—"}</td>
           <td>${new Date(t.created_at).toLocaleString("pt-BR")}</td>
         </tr>`).join("");
     }
