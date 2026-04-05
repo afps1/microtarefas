@@ -77,7 +77,7 @@ class Task(Base):
     price = Column(Integer, nullable=True)  # centavos, snapshot no momento da criação
     description = Column(Text)
     status = Column(
-        Enum("solicitado", "aceito", "em_execucao", "concluido", "recebido"),
+        Enum("solicitado", "aceito", "em_execucao", "concluido", "recebido", "cancelado"),
         default="solicitado",
     )
     created_at = Column(DateTime, default=datetime.utcnow)

@@ -542,7 +542,7 @@
       const data = await res.json();
       const tbody = document.getElementById("tasks-tbody");
       if (!data.length) { tbody.innerHTML = `<tr class="empty-row"><td colspan="6">Nenhuma tarefa.</td></tr>`; return; }
-      const statusPt = { solicitado:"Solicitado", aceito:"Aceito", em_execucao:"Em execução", concluido:"Concluído", recebido:"Recebido" };
+      const statusPt = { solicitado:"Solicitado", aceito:"Aceito", em_execucao:"Em execução", concluido:"Concluído", recebido:"Recebido", cancelado:"Cancelado" };
       tbody.innerHTML = data.map(t => `
         <tr>
           <td>${t.type}</td><td>${t.resident_name}</td><td>${t.runner_name || "—"}</td>

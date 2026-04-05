@@ -303,7 +303,7 @@ def _handle_cancelar(resident: models.Resident, db: Session):
         send_message(wa_phone(resident.phone), "Não há tarefa que possa ser cancelada agora.")
         return
 
-    task.status = "recebido"
+    task.status = "cancelado"
     task.updated_at = datetime.now(timezone.utc)
     db.commit()
     send_message(wa_phone(resident.phone), "Pedido cancelado com sucesso.")
