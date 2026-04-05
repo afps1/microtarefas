@@ -150,13 +150,23 @@
     let lastTasksHash = null;
     const POLL_INTERVAL = 8000;
 
+    // AudioContext criado uma vez e desbloqueado no primeiro toque
+    let audioCtx = null;
+    function getAudioCtx() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      return audioCtx;
+    }
+    document.addEventListener("click", () => getAudioCtx(), { once: true });
+    document.addEventListener("touchstart", () => getAudioCtx(), { once: true });
+
     function vibrar() {
       if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
     }
 
     function apitar() {
       try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = getAudioCtx();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.connect(gain);
