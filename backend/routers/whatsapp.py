@@ -14,6 +14,11 @@ VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", "")
 MAGIC_LINK_EXPIRY_MINUTES = int(os.getenv("MAGIC_LINK_EXPIRY_MINUTES", 10))
 APP_URL = os.getenv("APP_URL", "http://localhost:3000")
 
+def wa_phone(phone: str) -> str:
+    """Garante que o número tenha o DDI 55 para envio via API da Meta."""
+    return phone if phone.startswith("55") else f"55{phone}"
+
+
 TASK_LABELS = {
     "lixo": "Levar lixo",
     "encomenda": "Buscar encomenda",
@@ -59,13 +64,18 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
     except (KeyError, IndexError):
         return {"status": "ignored"}
 
+    import logging
+    logging.getLogger(__name__).warning(f"[WEBHOOK] raw_phone={raw_phone} phone_normalizado={phone}")
+
     resident = db.query(models.Resident).filter(
         models.Resident.phone == phone,
         models.Resident.active == True,
     ).first()
 
+    logging.getLogger(__name__).warning(f"[WEBHOOK] resident={resident}")
+
     if not resident:
-        send_message(phone, "Olá! Seu número não está cadastrado. Acesse o link para se cadastrar.")
+        send_message(raw_phone, "Olá! Seu número não está cadastrado. Acesse o link para se cadastrar.")
         return {"status": "unregistered"}
 
     result = interpret_message(text)
@@ -79,7 +89,7 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
         _handle_cancelar(resident, db)
     else:
         send_message(
-            resident.phone,
+            wa_phone(resident.phone),
             "Não entendi. Você pode pedir:\n• Levar lixo\n• Buscar encomenda\n• Compra no mercadinho",
         )
 
@@ -95,7 +105,7 @@ async def _handle_solicitar(resident: models.Resident, gpt_result: dict, db: Ses
 
     if open_task:
         send_message(
-            resident.phone,
+            wa_phone(resident.phone),
             f"Você já tem uma tarefa em andamento: *{TASK_LABELS.get(open_task.type, open_task.type)}* ({open_task.status}). Aguarde a conclusão antes de solicitar uma nova.",
         )
         return
@@ -138,7 +148,7 @@ async def _handle_solicitar(resident: models.Resident, gpt_result: dict, db: Ses
 
         link = f"{APP_URL}/task.html?token={token}"
         send_message(
-            runner.phone,
+            wa_phone(runner.phone),
             f"🔔 Nova tarefa disponível: *{label}*\nAp. {resident.apartment}\n\nAcesse para aceitar: {link}\n\n_(Link válido por {MAGIC_LINK_EXPIRY_MINUTES} minutos)_",
         )
 
