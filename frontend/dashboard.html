@@ -109,8 +109,8 @@
       return d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
     }
 
-    let lastTaskCount = 0;
     let lastTaskIds = new Set();
+    let lastTasksHash = "";
     const POLL_INTERVAL = 8000; // 8 segundos
 
     function vibrar() {
@@ -155,7 +155,23 @@
         }
         lastTaskIds = new Set(data.map(t => t.id));
 
+        // Só re-renderiza se algo mudou
+        const hash = data.map(t => `${t.id}:${t.status}`).join(",");
+        if (hash === lastTasksHash) return;
+        lastTasksHash = hash;
+
+        // Preserva o texto digitado no chat antes de re-renderizar
+        const savedChatText = activeChatTaskId
+          ? (document.getElementById(`chat-text-${activeChatTaskId}`)?.value || "")
+          : "";
+
         renderTasks(data);
+
+        // Restaura o texto após re-renderizar
+        if (activeChatTaskId && savedChatText) {
+          const input = document.getElementById(`chat-text-${activeChatTaskId}`);
+          if (input) input.value = savedChatText;
+        }
       } catch {
         document.getElementById("tasks-list").innerHTML =
           `<div class="empty-state"><p>Erro ao carregar tarefas.</p></div>`;
