@@ -251,7 +251,7 @@
           <div style="padding:0 20px 20px;"><button class="btn btn-primary" onclick="createRunner()" style="max-width:200px;">Salvar</button></div>
         </div>
         <div class="card">
-          <table><thead><tr><th>Nome</th><th>E-mail</th><th>Telefone</th><th>Pix</th><th>Status</th><th>Ações</th></tr></thead>
+          <table><thead><tr><th>Nome</th><th>E-mail</th><th>Telefone</th><th>Pix</th><th>Nota</th><th>Status</th><th>Ações</th></tr></thead>
           <tbody id="runners-tbody"></tbody></table>
         </div>`;
       loadRunners();
@@ -285,6 +285,7 @@
       tbody.innerHTML = data.map(r => `
         <tr id="runner-row-${r.id}">
           <td>${r.name}</td><td>${r.email}</td><td>${r.phone}</td><td>${r.pix_key || "—"}</td>
+          <td>${r.rating ? "⭐ " + r.rating : "—"}</td>
           <td><span class="badge badge-${r.status}">${r.status}</span></td>
           <td style="display:flex;gap:6px;">
             ${r.status !== "approved" ? `<button class="btn-sm btn-approve" onclick="setRunnerStatus(${r.id},'approved')">Aprovar</button>` : ""}

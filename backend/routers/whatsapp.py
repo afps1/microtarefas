@@ -78,6 +78,11 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
         send_message(raw_phone, "Olá! Seu número não está cadastrado. Acesse o link para se cadastrar.")
         return {"status": "unregistered"}
 
+    # Verifica se é uma avaliação pendente (resposta 1-5)
+    if text.strip() in ("1", "2", "3", "4", "5"):
+        if _handle_avaliacao(resident, int(text.strip()), db):
+            return {"status": "ok"}
+
     result = interpret_message(text)
     intent = result.get("intent")
 
@@ -167,4 +172,36 @@ def _handle_cancelar(resident: models.Resident, db: Session):
     task.updated_at = datetime.now(timezone.utc)
     db.commit()
 
-    send_message(resident.phone, "Pedido cancelado com sucesso.")
+    send_message(wa_phone(resident.phone), "Pedido cancelado com sucesso.")
+
+
+def _handle_avaliacao(resident: models.Resident, score: int, db) -> bool:
+    """Salva avaliação se houver tarefa recém-concluída sem avaliação. Retorna True se processou."""
+    task = (
+        db.query(models.Task)
+        .filter(
+            models.Task.resident_id == resident.id,
+            models.Task.status == "recebido",
+            models.Task.runner_id != None,
+        )
+        .outerjoin(models.Rating, models.Rating.task_id == models.Task.id)
+        .filter(models.Rating.id == None)
+        .order_by(models.Task.updated_at.desc())
+        .first()
+    )
+
+    if not task:
+        return False
+
+    rating = models.Rating(
+        task_id=task.id,
+        runner_id=task.runner_id,
+        resident_id=resident.id,
+        score=score,
+    )
+    db.add(rating)
+    db.commit()
+
+    estrelas = "⭐" * score
+    send_message(wa_phone(resident.phone), f"Obrigado pela avaliação! {estrelas}")
+    return True

@@ -38,18 +38,21 @@ class ResidentUpdate(BaseModel):
 @router.get("/runners")
 def list_runners(db: Session = Depends(get_db), admin=Depends(get_admin_condominio)):
     condo_id = _condo_id(admin)
+    from sqlalchemy import func
     runners = db.query(models.Runner).filter(models.Runner.condominium_id == condo_id).all()
-    return [
-        {
+    result = []
+    for r in runners:
+        avg = db.query(func.avg(models.Rating.score)).filter(models.Rating.runner_id == r.id).scalar()
+        result.append({
             "id": r.id,
             "name": r.name,
             "email": r.email,
             "phone": r.phone,
             "pix_key": r.pix_key,
             "status": r.status,
-        }
-        for r in runners
-    ]
+            "rating": round(float(avg), 1) if avg else None,
+        })
+    return result
 
 
 @router.patch("/runners/{runner_id}/status")

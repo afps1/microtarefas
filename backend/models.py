@@ -100,6 +100,21 @@ class MagicLink(Base):
     task = relationship("Task", back_populates="magic_links")
 
 
+class Rating(Base):
+    __tablename__ = "ratings"
+
+    id = Column(Integer, primary_key=True)
+    task_id = Column(Integer, ForeignKey("tasks.id"), nullable=False, unique=True)
+    runner_id = Column(Integer, ForeignKey("runners.id"), nullable=False)
+    resident_id = Column(Integer, ForeignKey("residents.id"), nullable=False)
+    score = Column(Integer, nullable=False)  # 1-5
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    task = relationship("Task", foreign_keys=[task_id])
+    runner = relationship("Runner", foreign_keys=[runner_id])
+    resident = relationship("Resident", foreign_keys=[resident_id])
+
+
 class OtpCode(Base):
     __tablename__ = "otp_codes"
 

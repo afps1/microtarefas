@@ -16,6 +16,7 @@ NOTIFICACOES = {
     "aceito": lambda runner, task: f"✅ *{runner.name}* aceitou sua tarefa e está a caminho!",
     "em_execucao": lambda runner, task: f"🏃 *{runner.name}* está executando sua tarefa agora.",
     "concluido": lambda runner, task: f"🎉 Tarefa concluída por *{runner.name}*!\n\n💸 Chave Pix: *{runner.pix_key or 'não cadastrada'}*",
+    "recebido": lambda runner, task: f"Como você avalia o serviço de *{runner.name}*?\n\nResponda com um número de 1 a 5:\n⭐ 1 - Ruim\n⭐⭐ 2 - Regular\n⭐⭐⭐ 3 - Bom\n⭐⭐⭐⭐ 4 - Ótimo\n⭐⭐⭐⭐⭐ 5 - Excelente",
 }
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
