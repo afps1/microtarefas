@@ -206,6 +206,31 @@ async def send_media(task_id: int, file: UploadFile = File(...), db: Session = D
     return {"status": "ok", "media_id": media_id}
 
 
+class PixPayload(BaseModel):
+    payload: str
+
+
+@router.post("/{task_id}/pix")
+def send_pix_code(task_id: int, body: PixPayload, db: Session = Depends(get_db), runner=Depends(get_current_runner)):
+    task = db.query(models.Task).filter(
+        models.Task.id == task_id,
+        models.Task.runner_id == runner.id,
+        models.Task.status == "em_execucao",
+    ).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Tarefa não encontrada ou não em execução")
+
+    msg_text = f"Código Pix:\n{body.payload}"
+    db.add(models.TaskMessage(task_id=task_id, sender="parceiro", type="text", content=msg_text))
+    db.commit()
+
+    send_message(
+        wa_phone(task.resident.phone),
+        f"💸 Código Pix para pagamento:\n\n```{body.payload}```\n\nCopie e cole no seu banco para pagar.",
+    )
+    return {"status": "ok"}
+
+
 @router.get("/media/{media_id}")
 def proxy_media(media_id: str, token: str = Query(...)):
     payload = decode_token(token)
