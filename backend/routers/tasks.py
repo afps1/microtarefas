@@ -224,10 +224,9 @@ def send_pix_code(task_id: int, body: PixPayload, db: Session = Depends(get_db),
     db.add(models.TaskMessage(task_id=task_id, sender="parceiro", type="text", content=msg_text))
     db.commit()
 
-    send_message(
-        wa_phone(task.resident.phone),
-        f"💸 Código Pix para pagamento:\n\n```{body.payload}```\n\nCopie e cole no seu banco para pagar.",
-    )
+    phone = wa_phone(task.resident.phone)
+    send_message(phone, "💸 Código Pix para pagamento — copie a linha abaixo:")
+    send_message(phone, body.payload)
     return {"status": "ok"}
 
 
