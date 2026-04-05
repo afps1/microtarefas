@@ -45,6 +45,11 @@ def request_otp(body: RequestOtpBody, db: Session = Depends(get_db)):
     db.commit()
 
     send_otp_email(body.email, code)
+
+    import os
+    if os.getenv("EMAIL_MOCK", "true").lower() == "true":
+        return {"message": "Código enviado para o e-mail", "dev_otp": code}
+
     return {"message": "Código enviado para o e-mail"}
 
 

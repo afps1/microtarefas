@@ -49,7 +49,13 @@ document.getElementById("form-email").addEventListener("submit", async (e) => {
     document.getElementById("otp-hint").textContent = `Código enviado para ${email}.`;
     stepEmail.classList.remove("active");
     stepOtp.classList.add("active");
-    document.getElementById("otp").focus();
+
+    if (data.dev_otp) {
+      document.getElementById("otp").value = data.dev_otp;
+      showAlert(`[DEV] OTP: ${data.dev_otp}`, "success");
+    } else {
+      document.getElementById("otp").focus();
+    }
   } catch {
     showAlert("Erro de conexão com o servidor.");
   } finally {
