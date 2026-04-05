@@ -37,8 +37,12 @@ def run_migration(key: str, db: Session = Depends(get_db)):
             FOREIGN KEY (runner_id) REFERENCES runners(id),
             FOREIGN KEY (resident_id) REFERENCES residents(id)
         )""",
-        "ALTER TABLE tasks ADD COLUMN IF NOT EXISTS service_type_id INT NULL",
-        "ALTER TABLE tasks ADD COLUMN IF NOT EXISTS price INT NULL",
+    ]
+
+    # Adiciona colunas apenas se não existirem
+    col_checks = [
+        ("tasks", "service_type_id", "INT NULL"),
+        ("tasks", "price", "INT NULL"),
     ]
 
     results = []
@@ -49,5 +53,20 @@ def run_migration(key: str, db: Session = Depends(get_db)):
             results.append({"sql": sql[:60], "status": "ok"})
         except Exception as e:
             results.append({"sql": sql[:60], "status": str(e)})
+
+    for table, column, col_def in col_checks:
+        check = db.execute(text(
+            f"SELECT COUNT(*) FROM information_schema.COLUMNS "
+            f"WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '{table}' AND COLUMN_NAME = '{column}'"
+        )).scalar()
+        if check == 0:
+            try:
+                db.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {col_def}"))
+                db.commit()
+                results.append({"sql": f"ADD COLUMN {table}.{column}", "status": "ok"})
+            except Exception as e:
+                results.append({"sql": f"ADD COLUMN {table}.{column}", "status": str(e)})
+        else:
+            results.append({"sql": f"ADD COLUMN {table}.{column}", "status": "already exists"})
 
     return {"results": results}
