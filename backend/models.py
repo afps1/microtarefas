@@ -72,7 +72,9 @@ class Task(Base):
     condominium_id = Column(Integer, ForeignKey("condominiums.id"), nullable=False)
     resident_id = Column(Integer, ForeignKey("residents.id"), nullable=False)
     runner_id = Column(Integer, ForeignKey("runners.id"), nullable=True)
+    service_type_id = Column(Integer, ForeignKey("service_types.id"), nullable=True)
     type = Column(String(100), nullable=False)
+    price = Column(Integer, nullable=True)  # centavos, snapshot no momento da criação
     description = Column(Text)
     status = Column(
         Enum("solicitado", "aceito", "em_execucao", "concluido", "recebido"),
@@ -83,6 +85,7 @@ class Task(Base):
 
     resident = relationship("Resident", back_populates="tasks")
     runner = relationship("Runner", back_populates="tasks")
+    service_type = relationship("ServiceType", foreign_keys=[service_type_id])
     magic_links = relationship("MagicLink", back_populates="task")
 
 
@@ -98,6 +101,20 @@ class MagicLink(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     task = relationship("Task", back_populates="magic_links")
+
+
+class ServiceType(Base):
+    __tablename__ = "service_types"
+
+    id = Column(Integer, primary_key=True)
+    condominium_id = Column(Integer, ForeignKey("condominiums.id"), nullable=False)
+    name = Column(String(200), nullable=False)
+    description = Column(String(500))
+    price = Column(Integer, nullable=False)  # centavos
+    active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    condominium = relationship("Condominium", foreign_keys=[condominium_id])
 
 
 class Rating(Base):

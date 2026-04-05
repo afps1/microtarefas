@@ -19,6 +19,19 @@ class StatusUpdate(BaseModel):
     status: str
 
 
+class ServiceTypeCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    price: int  # centavos
+
+
+class ServiceTypeUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    price: Optional[int] = None
+    active: Optional[bool] = None
+
+
 class RunnerUpdate(BaseModel):
     name: Optional[str] = None
     phone: Optional[str] = None
@@ -31,6 +44,72 @@ class ResidentUpdate(BaseModel):
     phone: Optional[str] = None
     apartment: Optional[str] = None
     email: Optional[EmailStr] = None
+
+
+# ── Serviços ──
+
+@router.get("/services")
+def list_services(db: Session = Depends(get_db), admin=Depends(get_admin_condominio)):
+    condo_id = _condo_id(admin)
+    services = db.query(models.ServiceType).filter(models.ServiceType.condominium_id == condo_id).all()
+    return [
+        {
+            "id": s.id,
+            "name": s.name,
+            "description": s.description,
+            "price": s.price,
+            "price_fmt": f"R$ {s.price / 100:.2f}".replace(".", ","),
+            "active": s.active,
+        }
+        for s in services
+    ]
+
+
+@router.post("/services", status_code=status.HTTP_201_CREATED)
+def create_service(body: ServiceTypeCreate, db: Session = Depends(get_db), admin=Depends(get_admin_condominio)):
+    condo_id = _condo_id(admin)
+    service = models.ServiceType(
+        condominium_id=condo_id,
+        name=body.name,
+        description=body.description,
+        price=body.price,
+    )
+    db.add(service)
+    db.commit()
+    db.refresh(service)
+    return {"id": service.id, "name": service.name, "price": service.price}
+
+
+@router.patch("/services/{service_id}")
+def update_service(service_id: int, body: ServiceTypeUpdate, db: Session = Depends(get_db), admin=Depends(get_admin_condominio)):
+    condo_id = _condo_id(admin)
+    service = db.query(models.ServiceType).filter(
+        models.ServiceType.id == service_id,
+        models.ServiceType.condominium_id == condo_id,
+    ).first()
+    if not service:
+        raise HTTPException(status_code=404, detail="Serviço não encontrado")
+
+    if body.name is not None: service.name = body.name
+    if body.description is not None: service.description = body.description
+    if body.price is not None: service.price = body.price
+    if body.active is not None: service.active = body.active
+
+    db.commit()
+    return {"id": service.id, "name": service.name, "price": service.price, "active": service.active}
+
+
+@router.delete("/services/{service_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_service(service_id: int, db: Session = Depends(get_db), admin=Depends(get_admin_condominio)):
+    condo_id = _condo_id(admin)
+    service = db.query(models.ServiceType).filter(
+        models.ServiceType.id == service_id,
+        models.ServiceType.condominium_id == condo_id,
+    ).first()
+    if not service:
+        raise HTTPException(status_code=404, detail="Serviço não encontrado")
+    db.delete(service)
+    db.commit()
 
 
 # ── Parceiros ──

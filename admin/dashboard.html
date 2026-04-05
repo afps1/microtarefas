@@ -46,6 +46,7 @@
 
     const menuCondominio = [
       { section: "stats", label: "Visão geral" },
+      { section: "services", label: "Serviços e preços" },
       { section: "runners", label: "Parceiros" },
       { section: "residents", label: "Moradores" },
       { section: "tasks", label: "Tarefas" },
@@ -212,6 +213,105 @@
     async function toggleAdmin(id) {
       await apiFetch(`/admin/geral/admins/${id}/active`, { method: "PATCH" });
       loadCondoAdmins();
+    }
+
+    // ── Serviços ──
+
+    function renderServices() {
+      document.getElementById("main-content").innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+          <div class="page-title" style="margin:0">Serviços e preços</div>
+          <button class="btn btn-primary" style="width:auto;padding:10px 20px;" onclick="showServiceForm()">+ Novo</button>
+        </div>
+        <div id="service-form" style="display:none;" class="card" style="margin-bottom:20px;">
+          <div class="card-header">Novo serviço</div>
+          <div style="padding:20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+            <div class="form-group"><label>Nome</label><input type="text" id="sv-name" placeholder="Ex: Coleta de lixo" /></div>
+            <div class="form-group"><label>Descrição (opcional)</label><input type="text" id="sv-desc" /></div>
+            <div class="form-group"><label>Preço (R$)</label><input type="number" id="sv-price" placeholder="5.00" step="0.01" min="0" /></div>
+          </div>
+          <div style="padding:0 20px 20px;"><button class="btn btn-primary" onclick="createService()" style="max-width:200px;">Salvar</button></div>
+        </div>
+        <div class="card">
+          <table><thead><tr><th>Serviço</th><th>Descrição</th><th>Preço</th><th>Ativo</th><th></th></tr></thead>
+          <tbody id="services-tbody"></tbody></table>
+        </div>`;
+      loadServices();
+    }
+
+    function showServiceForm() {
+      const f = document.getElementById("service-form");
+      f.style.display = f.style.display === "none" ? "block" : "none";
+    }
+
+    async function loadServices() {
+      const res = await apiFetch("/admin/condominio/services");
+      if (!res) return;
+      const data = await res.json();
+      const tbody = document.getElementById("services-tbody");
+      if (!data.length) { tbody.innerHTML = `<tr class="empty-row"><td colspan="5">Nenhum serviço cadastrado.</td></tr>`; return; }
+      tbody.innerHTML = data.map(s => `
+        <tr id="service-row-${s.id}">
+          <td>${s.name}</td>
+          <td>${s.description || "—"}</td>
+          <td><strong>${s.price_fmt}</strong></td>
+          <td>${s.active ? "✅" : "❌"}</td>
+          <td style="display:flex;gap:6px;">
+            <button class="btn-sm" style="background:#e0f2fe;color:#0369a1;" onclick="editService(${s.id},'${s.name}','${s.description||''}',${s.price})">Editar</button>
+            <button class="btn-sm ${s.active ? "btn-block" : "btn-approve"}" onclick="toggleService(${s.id},${!s.active})">${s.active ? "Desativar" : "Ativar"}</button>
+            <button class="btn-sm btn-block" onclick="deleteService(${s.id})">Remover</button>
+          </td>
+        </tr>`).join("");
+    }
+
+    async function createService() {
+      const priceReais = parseFloat(document.getElementById("sv-price").value);
+      if (isNaN(priceReais) || priceReais < 0) return alert("Preço inválido");
+      const body = {
+        name: document.getElementById("sv-name").value.trim(),
+        description: document.getElementById("sv-desc").value.trim() || null,
+        price: Math.round(priceReais * 100),
+      };
+      if (!body.name) return alert("Nome obrigatório");
+      const res = await apiFetch("/admin/condominio/services", { method: "POST", body: JSON.stringify(body) });
+      if (res?.ok) { document.getElementById("service-form").style.display = "none"; loadServices(); }
+      else { const d = await res.json(); alert(d.detail || "Erro"); }
+    }
+
+    function editService(id, name, desc, price) {
+      const row = document.getElementById(`service-row-${id}`);
+      const priceReais = (price / 100).toFixed(2);
+      row.innerHTML = `
+        <td><input type="text" value="${name}" id="esv-name-${id}" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:5px;" /></td>
+        <td><input type="text" value="${desc}" id="esv-desc-${id}" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:5px;" /></td>
+        <td><input type="number" value="${priceReais}" id="esv-price-${id}" step="0.01" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:5px;" /></td>
+        <td colspan="2" style="display:flex;gap:6px;">
+          <button class="btn-sm btn-approve" onclick="saveService(${id})">Salvar</button>
+          <button class="btn-sm" style="background:#f3f4f6;" onclick="loadServices()">Cancelar</button>
+        </td>`;
+    }
+
+    async function saveService(id) {
+      const priceReais = parseFloat(document.getElementById(`esv-price-${id}`).value);
+      const body = {
+        name: document.getElementById(`esv-name-${id}`).value.trim(),
+        description: document.getElementById(`esv-desc-${id}`).value.trim() || null,
+        price: Math.round(priceReais * 100),
+      };
+      const res = await apiFetch(`/admin/condominio/services/${id}`, { method: "PATCH", body: JSON.stringify(body) });
+      if (res?.ok) loadServices();
+      else { const d = await res.json(); alert(d.detail || "Erro"); }
+    }
+
+    async function toggleService(id, active) {
+      await apiFetch(`/admin/condominio/services/${id}`, { method: "PATCH", body: JSON.stringify({ active }) });
+      loadServices();
+    }
+
+    async function deleteService(id) {
+      if (!confirm("Remover este serviço?")) return;
+      await apiFetch(`/admin/condominio/services/${id}`, { method: "DELETE" });
+      loadServices();
     }
 
     // ── Seções Admin Condomínio ──
@@ -461,6 +561,7 @@
       condominiums: renderCondominiums,
       "condo-admins": renderCondoAdmins,
       stats: renderStats,
+      services: renderServices,
       runners: renderRunners,
       residents: renderResidents,
       tasks: renderTasks,

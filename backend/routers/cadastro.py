@@ -30,6 +30,16 @@ def list_condominiums_public(db: Session = Depends(get_db)):
     return [{"id": c.id, "name": c.name} for c in condos]
 
 
+@router.get("/services/{condominium_id}")
+def list_services_public(condominium_id: int, db: Session = Depends(get_db)):
+    """Lista serviços ativos de um condomínio."""
+    services = db.query(models.ServiceType).filter(
+        models.ServiceType.condominium_id == condominium_id,
+        models.ServiceType.active == True,
+    ).all()
+    return [{"id": s.id, "name": s.name, "price": s.price} for s in services]
+
+
 @router.post("/morador", status_code=status.HTTP_201_CREATED)
 def cadastrar_morador(body: ResidentCreate, db: Session = Depends(get_db)):
     condo = db.query(models.Condominium).filter(

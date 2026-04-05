@@ -93,9 +93,18 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
     elif intent == "cancelar":
         _handle_cancelar(resident, db)
     else:
+        # Monta menu dinâmico com serviços do condomínio
+        services = db.query(models.ServiceType).filter(
+            models.ServiceType.condominium_id == resident.condominium_id,
+            models.ServiceType.active == True,
+        ).all()
+        if services:
+            menu = "\n".join([f"• {s.name} — R$ {s.price / 100:.2f}".replace(".", ",") for s in services])
+        else:
+            menu = "• Levar lixo\n• Buscar encomenda\n• Compra no mercadinho"
         send_message(
             wa_phone(resident.phone),
-            "Não entendi. Você pode pedir:\n• Levar lixo\n• Buscar encomenda\n• Compra no mercadinho",
+            f"Não entendi. Você pode pedir:\n{menu}",
         )
 
     return {"status": "ok"}
@@ -118,20 +127,30 @@ async def _handle_solicitar(resident: models.Resident, gpt_result: dict, db: Ses
     task_type = gpt_result.get("task_type") or "outro"
     description = gpt_result.get("description")
 
+    # Busca serviço correspondente ao tipo identificado pelo GPT
+    service = db.query(models.ServiceType).filter(
+        models.ServiceType.condominium_id == resident.condominium_id,
+        models.ServiceType.active == True,
+        models.ServiceType.name.ilike(f"%{TASK_LABELS.get(task_type, task_type)}%"),
+    ).first()
+
     task = models.Task(
         condominium_id=resident.condominium_id,
         resident_id=resident.id,
         type=task_type,
         description=description,
         status="solicitado",
+        service_type_id=service.id if service else None,
+        price=service.price if service else None,
     )
     db.add(task)
     db.flush()
 
-    label = TASK_LABELS.get(task_type, task_type)
+    label = service.name if service else TASK_LABELS.get(task_type, task_type)
+    price_info = f" — *R$ {service.price / 100:.2f}*".replace(".", ",") if service else ""
     send_message(
         wa_phone(resident.phone),
-        f"✅ Pedido recebido: *{label}*. Estamos buscando um parceiro disponível. Você será avisado em breve!",
+        f"✅ Pedido recebido: *{label}*{price_info}. Estamos buscando um parceiro disponível. Você será avisado em breve!",
     )
 
     db.commit()
