@@ -84,8 +84,20 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
     ).first()
 
     if pending:
-        if text_lower in ("sim", "s", "confirmar", "confirma", "ok"):
+        if pending.awaiting_observation:
+            # Qualquer texto vira observação; "não" pula
+            obs = None if text_lower in ("não", "nao", "n", "nao obrigado", "não obrigado") else text
+            pending.description = obs
+            pending.awaiting_observation = False
+            db.commit()
             await _confirmar_pedido(resident, pending, db)
+        elif text_lower in ("sim", "s", "confirmar", "confirma", "ok"):
+            pending.awaiting_observation = True
+            db.commit()
+            send_message(
+                wa_phone(resident.phone),
+                "Quer incluir alguma observação para o parceiro? Responda com o texto ou *não* para pular.",
+            )
         elif text_lower in ("não", "nao", "n", "cancelar", "cancela"):
             db.delete(pending)
             db.commit()

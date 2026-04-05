@@ -125,6 +125,7 @@ class PendingRequest(Base):
     task_type = Column(String(100), nullable=False)
     service_type_id = Column(Integer, ForeignKey("service_types.id"), nullable=True)
     description = Column(Text, nullable=True)
+    awaiting_observation = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     resident = relationship("Resident", foreign_keys=[resident_id])

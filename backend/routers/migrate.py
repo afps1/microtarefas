@@ -53,6 +53,7 @@ def run_migration(key: str, db: Session = Depends(get_db)):
     col_checks = [
         ("tasks", "service_type_id", "INT NULL"),
         ("tasks", "price", "INT NULL"),
+        ("pending_requests", "awaiting_observation", "BOOLEAN NOT NULL DEFAULT FALSE"),
     ]
 
     results = []
