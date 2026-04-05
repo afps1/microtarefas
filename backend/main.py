@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+import os
 from database import engine, Base
 from routers import auth_runner, auth_admin, admin_geral, admin_condominio, tasks, cadastro, whatsapp, setup
 
@@ -25,8 +26,9 @@ app.include_router(whatsapp.router)
 app.include_router(setup.router)
 
 
-app.mount("/admin", StaticFiles(directory="../admin", html=True), name="admin")
-app.mount("/app", StaticFiles(directory="../frontend", html=True), name="frontend")
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+app.mount("/admin", StaticFiles(directory=os.path.join(BASE_DIR, "admin"), html=True), name="admin")
+app.mount("/app", StaticFiles(directory=os.path.join(BASE_DIR, "frontend"), html=True), name="frontend")
 
 @app.get("/")
 def root():
