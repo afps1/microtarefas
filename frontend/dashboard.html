@@ -87,6 +87,37 @@
       return d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
     }
 
+    let lastTaskCount = 0;
+    let lastTaskIds = new Set();
+    const POLL_INTERVAL = 8000; // 8 segundos
+
+    function vibrar() {
+      if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+    }
+
+    function apitar() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = "sine";
+        osc.frequency.value = 880;
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.6);
+      } catch {}
+    }
+
+    function notificarNovaTarefa() {
+      vibrar();
+      apitar();
+      document.title = "🔔 Nova tarefa! — Vem Aqui";
+      setTimeout(() => { document.title = "Vem Aqui — Painel"; }, 4000);
+    }
+
     async function loadTasks() {
       try {
         const res = await fetch(`${API}/tasks/my`, {
@@ -94,6 +125,14 @@
         });
         if (res.status === 401) { logout(); return; }
         const data = await res.json();
+
+        // Detecta novas tarefas solicitadas
+        const novos = data.filter(t => t.status === "solicitado" && !lastTaskIds.has(t.id));
+        if (novos.length > 0 && lastTaskIds.size > 0) {
+          notificarNovaTarefa();
+        }
+        lastTaskIds = new Set(data.map(t => t.id));
+
         renderTasks(data);
       } catch {
         document.getElementById("tasks-list").innerHTML =
@@ -118,6 +157,7 @@
     }
 
     loadTasks();
+    setInterval(loadTasks, POLL_INTERVAL);
   </script>
 </body>
 </html>
