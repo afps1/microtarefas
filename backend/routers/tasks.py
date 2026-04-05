@@ -133,3 +133,38 @@ def update_task_status(
             logging.getLogger(__name__).error(f"Erro ao notificar morador: {e}")
 
     return {"id": task.id, "status": task.status}
+
+
+@router.post("/{task_id}/cancel")
+def cancel_task(
+    task_id: int,
+    db: Session = Depends(get_db),
+    runner=Depends(get_current_runner),
+):
+    task = db.query(models.Task).filter(
+        models.Task.id == task_id,
+        models.Task.condominium_id == runner.condominium_id,
+        models.Task.runner_id == runner.id,
+    ).first()
+
+    if not task:
+        raise HTTPException(status_code=404, detail="Tarefa não encontrada")
+
+    if task.status not in ("aceito", "em_execucao"):
+        raise HTTPException(status_code=400, detail="Tarefa não pode ser cancelada neste status")
+
+    task.status = "solicitado"
+    task.runner_id = None
+    task.updated_at = datetime.now(timezone.utc)
+    db.commit()
+
+    try:
+        send_message(
+            wa_phone(task.resident.phone),
+            f"⚠️ O parceiro precisou cancelar sua tarefa. Estamos buscando outro parceiro disponível.",
+        )
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Erro ao notificar morador: {e}")
+
+    return {"id": task.id, "status": task.status}

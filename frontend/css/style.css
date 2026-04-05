@@ -143,6 +143,16 @@ input:focus {
   cursor: not-allowed;
 }
 
+.btn-cancel {
+  background: #fef2f2;
+  color: var(--danger);
+  border: 1.5px solid #fecaca;
+}
+
+.btn-cancel:hover {
+  background: #fee2e2;
+}
+
 .btn-link {
   background: none;
   color: var(--primary);

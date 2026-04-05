@@ -71,10 +71,18 @@
         return `<button class="btn btn-primary" onclick="updateTask(${task.id}, 'aceito')">Aceitar</button>`;
       }
       if (task.status === "aceito") {
-        return `<button class="btn btn-primary" onclick="updateTask(${task.id}, 'em_execucao')">Iniciar execução</button>`;
+        return `
+          <div style="display:flex;gap:10px;">
+            <button class="btn btn-primary" onclick="updateTask(${task.id}, 'em_execucao')">Iniciar execução</button>
+            <button class="btn btn-cancel" onclick="cancelTask(${task.id})">Cancelar serviço</button>
+          </div>`;
       }
       if (task.status === "em_execucao") {
-        return `<button class="btn btn-primary" onclick="updateTask(${task.id}, 'concluido')">Marcar concluído</button>`;
+        return `
+          <div style="display:flex;gap:10px;">
+            <button class="btn btn-primary" onclick="updateTask(${task.id}, 'concluido')">Marcar concluído</button>
+            <button class="btn btn-cancel" onclick="cancelTask(${task.id})">Cancelar serviço</button>
+          </div>`;
       }
       if (task.status === "concluido") {
         return `<button class="btn btn-primary" onclick="updateTask(${task.id}, 'recebido')">Recebi o pagamento</button>`;
@@ -153,6 +161,20 @@
         if (res.ok) loadTasks();
       } catch {
         alert("Erro ao atualizar tarefa.");
+      }
+    }
+
+    async function cancelTask(taskId) {
+      if (!confirm("Tem certeza que deseja cancelar este serviço? O morador será avisado e a tarefa voltará para a fila.")) return;
+      try {
+        const res = await fetch(`${API}/tasks/${taskId}/cancel`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) loadTasks();
+        else alert("Erro ao cancelar tarefa.");
+      } catch {
+        alert("Erro ao cancelar tarefa.");
       }
     }
 
