@@ -12,16 +12,28 @@ def wa_phone(phone: str) -> str:
     return phone if phone.startswith("55") else f"55{phone}"
 
 
-NOTIFICACOES = {
-    "aceito": lambda runner, task: f"✅ *{runner.name}* aceitou sua tarefa e está a caminho!",
-    "em_execucao": lambda runner, task: f"🏃 *{runner.name}* está executando sua tarefa agora.",
-    "concluido": lambda runner, task: (
+def _msg_concluido(runner, task, db):
+    # Busca preço: snapshot da tarefa ou serviço atual
+    price = task.price
+    if not price and task.service_type_id:
+        service = db.query(models.ServiceType).filter(models.ServiceType.id == task.service_type_id).first()
+        if service:
+            price = service.price
+    if not price:
+        # Tenta pelo tipo da tarefa
+        service = db.query(models.ServiceType).filter(
+            models.ServiceType.condominium_id == task.condominium_id,
+            models.ServiceType.active == True,
+        ).first()
+        if service:
+            price = service.price
+
+    price_str = f"💸 Valor: *R$ {price / 100:.2f}*\n".replace(".", ",") if price else ""
+    return (
         f"🎉 Tarefa concluída por *{runner.name}*!\n\n"
-        f"💸 Valor: *R$ {task.price / 100:.2f}*\n".replace(".", ",") +
+        f"{price_str}"
         f"Chave Pix: *{runner.pix_key or 'não cadastrada'}*"
-    ) if task.price else f"🎉 Tarefa concluída por *{runner.name}*!\n\n💸 Chave Pix: *{runner.pix_key or 'não cadastrada'}*",
-    "recebido": lambda runner, task: f"Como você avalia o serviço de *{runner.name}*?\n\nResponda com um número de 1 a 5:\n⭐ 1 - Ruim\n⭐⭐ 2 - Regular\n⭐⭐⭐ 3 - Bom\n⭐⭐⭐⭐ 4 - Ótimo\n⭐⭐⭐⭐⭐ 5 - Excelente",
-}
+    )
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
@@ -106,10 +118,16 @@ def update_task_status(
     db.commit()
 
     # Notifica morador via WhatsApp
+    NOTIFICACOES = {
+        "aceito": lambda r, t, _db: f"✅ *{r.name}* aceitou sua tarefa e está a caminho!",
+        "em_execucao": lambda r, t, _db: f"🏃 *{r.name}* está executando sua tarefa agora.",
+        "concluido": lambda r, t, _db: _msg_concluido(r, t, _db),
+        "recebido": lambda r, t, _db: f"Como você avalia o serviço de *{r.name}*?\n\nResponda com um número de 1 a 5:\n⭐ 1 - Ruim\n⭐⭐ 2 - Regular\n⭐⭐⭐ 3 - Bom\n⭐⭐⭐⭐ 4 - Ótimo\n⭐⭐⭐⭐⭐ 5 - Excelente",
+    }
     msg_fn = NOTIFICACOES.get(body.status)
     if msg_fn:
         try:
-            send_message(wa_phone(task.resident.phone), msg_fn(runner, task))
+            send_message(wa_phone(task.resident.phone), msg_fn(runner, task, db))
         except Exception as e:
             import logging
             logging.getLogger(__name__).error(f"Erro ao notificar morador: {e}")
