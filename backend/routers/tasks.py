@@ -15,7 +15,7 @@ def wa_phone(phone: str) -> str:
 NOTIFICACOES = {
     "aceito": lambda runner, task: f"✅ *{runner.name}* aceitou sua tarefa e está a caminho!",
     "em_execucao": lambda runner, task: f"🏃 *{runner.name}* está executando sua tarefa agora.",
-    "concluido": lambda runner, task: f"🎉 Tarefa concluída por *{runner.name}*!\n\nNão esqueça de pagar via Pix. Quando receber, responda *recebi*.",
+    "concluido": lambda runner, task: f"🎉 Tarefa concluída por *{runner.name}*!\n\n💸 Chave Pix: *{runner.pix_key or 'não cadastrada'}*\n\nQuando pagar, responda *recebi*.",
 }
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
