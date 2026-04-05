@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
 from database import engine, Base
-from routers import auth_runner, auth_admin, admin_geral, admin_condominio, tasks, cadastro, whatsapp, setup
+from routers import auth_runner, auth_admin, admin_geral, admin_condominio, tasks, cadastro, whatsapp, setup, migrate
 
 Base.metadata.create_all(bind=engine)
 
@@ -24,6 +24,7 @@ app.include_router(tasks.router)
 app.include_router(cadastro.router)
 app.include_router(whatsapp.router)
 app.include_router(setup.router)
+app.include_router(migrate.router)
 
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
