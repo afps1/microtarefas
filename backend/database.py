@@ -5,11 +5,16 @@ import os
 
 load_dotenv()
 
-# Railway injeta DATABASE_URL automaticamente quando o plugin MySQL é adicionado.
-# Localmente usamos as variáveis individuais.
-DATABASE_URL = os.getenv("DATABASE_URL") or (
-    f"mysql+pymysql://{os.getenv('DB_USER')}:{os.getenv('DB_PASS')}"
-    f"@{os.getenv('DB_HOST')}/{os.getenv('DB_NAME')}"
+# Prioridade: DATABASE_URL → MYSQL_URL (Railway MySQL plugin) → variáveis individuais
+DATABASE_URL = (
+    os.getenv("DATABASE_URL")
+    or os.getenv("MYSQL_URL")
+    or (
+        f"mysql+pymysql://{os.getenv('MYSQLUSER') or os.getenv('DB_USER')}"
+        f":{os.getenv('MYSQLPASSWORD') or os.getenv('DB_PASS')}"
+        f"@{os.getenv('MYSQLHOST') or os.getenv('DB_HOST')}"
+        f"/{os.getenv('MYSQLDATABASE') or os.getenv('DB_NAME')}"
+    )
 )
 
 engine = create_engine(DATABASE_URL)
