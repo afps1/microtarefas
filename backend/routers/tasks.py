@@ -4,7 +4,19 @@ from pydantic import BaseModel
 from datetime import datetime, timezone
 from database import get_db
 from dependencies import get_current_runner
+from services.whatsapp_service import send_message
 import models
+
+
+def wa_phone(phone: str) -> str:
+    return phone if phone.startswith("55") else f"55{phone}"
+
+
+NOTIFICACOES = {
+    "aceito": lambda runner, task: f"✅ *{runner.name}* aceitou sua tarefa e está a caminho!",
+    "em_execucao": lambda runner, task: f"🏃 *{runner.name}* está executando sua tarefa agora.",
+    "concluido": lambda runner, task: f"🎉 Tarefa concluída por *{runner.name}*!\n\nNão esqueça de pagar via Pix. Quando receber, responda *recebi*.",
+}
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
@@ -87,5 +99,14 @@ def update_task_status(
     task.status = body.status
     task.updated_at = datetime.now(timezone.utc)
     db.commit()
+
+    # Notifica morador via WhatsApp
+    msg_fn = NOTIFICACOES.get(body.status)
+    if msg_fn:
+        try:
+            send_message(wa_phone(task.resident.phone), msg_fn(runner, task))
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"Erro ao notificar morador: {e}")
 
     return {"id": task.id, "status": task.status}
