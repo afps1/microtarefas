@@ -122,7 +122,7 @@ def update_task_status(
     # Notifica morador via WhatsApp
     NOTIFICACOES = {
         "aceito": lambda r, t, _db: f"✅ *{r.name}* aceitou sua tarefa e está a caminho!",
-        "em_execucao": lambda r, t, _db: f"🏃 *{r.name}* está executando sua tarefa agora.",
+        "em_execucao": lambda r, t, _db: f"🏃 *{r.name}* está executando sua tarefa agora.\n\nSe precisar, pode mandar uma mensagem aqui mesmo — ele receberá em tempo real.",
         "concluido": lambda r, t, _db: _msg_concluido(r, t, _db),
         "recebido": lambda r, t, _db: f"Como você avalia o serviço de *{r.name}*?\n\nResponda com um número de 1 a 5:\n⭐ 1 - Ruim\n⭐⭐ 2 - Regular\n⭐⭐⭐ 3 - Bom\n⭐⭐⭐⭐ 4 - Ótimo\n⭐⭐⭐⭐⭐ 5 - Excelente",
     }
