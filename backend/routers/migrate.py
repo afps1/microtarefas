@@ -106,8 +106,10 @@ def clean_tasks(key: str, db: Session = Depends(get_db)):
     if key != os.getenv("SETUP_KEY"):
         return {"error": "unauthorized"}
 
+    db.execute(text("DELETE FROM task_messages"))
     db.execute(text("DELETE FROM ratings"))
     db.execute(text("DELETE FROM magic_links"))
+    db.execute(text("DELETE FROM pending_requests"))
     db.execute(text("DELETE FROM tasks"))
     db.commit()
-    return {"status": "ok", "message": "Tarefas, magic links e avaliações removidos."}
+    return {"status": "ok", "message": "Tarefas, mensagens, magic links e avaliações removidos."}
