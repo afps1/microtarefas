@@ -10,33 +10,42 @@ API_KEY = os.getenv("OPENAI_API_KEY")
 MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 API_URL = os.getenv("OPENAI_API_URL", "https://api.openai.com/v1/chat/completions")
 
-TASK_TYPES = ["lixo", "encomenda", "mercadinho", "outro"]
 
-SYSTEM_PROMPT = """Você é um assistente do app Vem Aqui, plataforma de microtarefas em condomínios.
+def interpret_message(text: str, services: list[str] | None = None) -> dict:
+    if services:
+        services_list = "\n".join(f'- "{s}"' for s in services)
+        task_type_options = " | ".join(f'"{s}"' for s in services) + ' | "outro"'
+        services_section = f"""
+Os serviços disponíveis neste condomínio são:
+{services_list}
+
+Ao identificar uma solicitação de tarefa, retorne em task_type o nome EXATO do serviço acima que melhor corresponde à mensagem do morador, ou "outro" se nenhum corresponder.
+"""
+    else:
+        task_type_options = '"outro"'
+        services_section = 'Não há serviços cadastrados. Use task_type "outro".'
+
+    system_prompt = f"""Você é um assistente do app Vem Aqui, plataforma de microtarefas em condomínios.
 O morador enviou uma mensagem pelo WhatsApp. Identifique a intenção.
-
+{services_section}
 Responda APENAS com um JSON no formato:
-{
+{{
   "intent": "solicitar_tarefa" | "cancelar" | "status" | "outro",
-  "task_type": "lixo" | "encomenda" | "mercadinho" | "outro" | null,
+  "task_type": {task_type_options} | null,
   "description": "detalhes adicionais extraídos da mensagem ou null"
-}
+}}
 
 Exemplos de intent:
-- "quero levar o lixo" → solicitar_tarefa, lixo
-- "pega minha encomenda na portaria" → solicitar_tarefa, encomenda
-- "quero comprar no mercadinho" → solicitar_tarefa, mercadinho
+- qualquer pedido de execução de tarefa → solicitar_tarefa
 - "cancela meu pedido" → cancelar
 - "qual o status do meu pedido" → status
 - qualquer outra coisa → outro
 """
 
-
-def interpret_message(text: str) -> dict:
     payload = json.dumps({
         "model": MODEL,
         "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": text},
         ],
         "temperature": 0,
@@ -56,7 +65,6 @@ def interpret_message(text: str) -> dict:
         with urllib.request.urlopen(req, timeout=10) as res:
             data = json.loads(res.read())
             content = data["choices"][0]["message"]["content"].strip()
-            # Remove markdown code block se o modelo retornar com ```json
             if content.startswith("```"):
                 content = content.split("```")[1]
                 if content.startswith("json"):

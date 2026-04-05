@@ -118,7 +118,12 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
             return {"status": "ok"}
 
     # 3. Interpreta intenção
-    result = interpret_message(text)
+    services = db.query(models.ServiceType).filter(
+        models.ServiceType.condominium_id == resident.condominium_id,
+        models.ServiceType.active == True,
+    ).all()
+    service_names = [s.name for s in services]
+    result = interpret_message(text, services=service_names)
     intent = result.get("intent")
 
     if intent == "solicitar_tarefa":
@@ -159,21 +164,22 @@ def _handle_solicitar(resident: models.Resident, gpt_result: dict, db: Session):
     task_type = gpt_result.get("task_type") or "outro"
     description = gpt_result.get("description")
 
-    # Busca serviço correspondente
+    # Busca serviço pelo nome exato retornado pelo GPT
     service = db.query(models.ServiceType).filter(
         models.ServiceType.condominium_id == resident.condominium_id,
         models.ServiceType.active == True,
-        models.ServiceType.name.ilike(f"%{TASK_LABELS.get(task_type, task_type)}%"),
+        models.ServiceType.name == task_type,
     ).first()
 
-    # Se não achou pelo label, pega qualquer serviço ativo
-    if not service:
+    # Fallback: busca por similaridade
+    if not service and task_type != "outro":
         service = db.query(models.ServiceType).filter(
             models.ServiceType.condominium_id == resident.condominium_id,
             models.ServiceType.active == True,
+            models.ServiceType.name.ilike(f"%{task_type}%"),
         ).first()
 
-    label = service.name if service else TASK_LABELS.get(task_type, task_type)
+    label = service.name if service else task_type
     price_info = f" — *R$ {service.price / 100:.2f}*".replace(".", ",") if service else ""
 
     # Salva pedido pendente aguardando confirmação
