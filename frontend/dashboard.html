@@ -158,7 +158,13 @@
           },
           body: JSON.stringify({ status: newStatus }),
         });
-        if (res.ok) loadTasks();
+        if (res.ok) {
+          loadTasks();
+        } else {
+          const data = await res.json();
+          alert(data.detail || "Erro ao atualizar tarefa.");
+          loadTasks();
+        }
       } catch {
         alert("Erro ao atualizar tarefa.");
       }
