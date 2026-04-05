@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import engine, Base
-from routers import auth_runner, auth_admin, admin_geral, admin_condominio, tasks, cadastro, whatsapp
+from routers import auth_runner, auth_admin, admin_geral, admin_condominio, tasks, cadastro, whatsapp, setup
 
 Base.metadata.create_all(bind=engine)
 
@@ -21,6 +21,7 @@ app.include_router(admin_condominio.router)
 app.include_router(tasks.router)
 app.include_router(cadastro.router)
 app.include_router(whatsapp.router)
+app.include_router(setup.router)
 
 
 @app.get("/")
