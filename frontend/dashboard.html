@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vem Aqui — Painel</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <header class="app-header">
+    <h1>Vem Aqui</h1>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span id="runner-name"></span>
+      <button class="btn-logout" onclick="logout()">Sair</button>
+    </div>
+  </header>
+
+  <main class="app-body">
+    <div class="section-title">Tarefas disponíveis</div>
+    <div id="tasks-list"></div>
+  </main>
+
+  <script>
+    const API = "http://localhost:8001";
+    const token = localStorage.getItem("token");
+    const runner = JSON.parse(localStorage.getItem("runner") || "null");
+
+    if (!token) window.location.href = "login.html";
+
+    document.getElementById("runner-name").textContent = runner?.name || "";
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = "login.html";
+    }
+
+    const statusLabel = {
+      solicitado: "Solicitado",
+      aceito: "Aceito",
+      em_execucao: "Em execução",
+      concluido: "Concluído",
+      recebido: "Recebido",
+    };
+
+    function renderTasks(tasks) {
+      const el = document.getElementById("tasks-list");
+
+      if (!tasks.length) {
+        el.innerHTML = `
+          <div class="empty-state">
+            <div style="font-size:40px">📭</div>
+            <p>Nenhuma tarefa disponível no momento.</p>
+          </div>`;
+        return;
+      }
+
+      el.innerHTML = tasks.map(t => `
+        <div class="task-card">
+          <div class="task-type">${t.type}</div>
+          <div class="task-meta">Ap. ${t.resident_apartment} · ${formatDate(t.created_at)}</div>
+          <span class="task-status status-${t.status}">${statusLabel[t.status] || t.status}</span>
+          ${t.description ? `<div style="font-size:13px;color:#374151;margin-bottom:14px;">${t.description}</div>` : ""}
+          ${taskActions(t)}
+        </div>
+      `).join("");
+    }
+
+    function taskActions(task) {
+      if (task.status === "solicitado") {
+        return `<button class="btn btn-primary" onclick="updateTask(${task.id}, 'aceito')">Aceitar</button>`;
+      }
+      if (task.status === "aceito") {
+        return `<button class="btn btn-primary" onclick="updateTask(${task.id}, 'em_execucao')">Iniciar execução</button>`;
+      }
+      if (task.status === "em_execucao") {
+        return `<button class="btn btn-primary" onclick="updateTask(${task.id}, 'concluido')">Marcar concluído</button>`;
+      }
+      if (task.status === "concluido") {
+        return `<button class="btn btn-primary" onclick="updateTask(${task.id}, 'recebido')">Recebi o pagamento</button>`;
+      }
+      return "";
+    }
+
+    function formatDate(iso) {
+      const d = new Date(iso);
+      return d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+    }
+
+    async function loadTasks() {
+      try {
+        const res = await fetch(`${API}/tasks/my`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.status === 401) { logout(); return; }
+        const data = await res.json();
+        renderTasks(data);
+      } catch {
+        document.getElementById("tasks-list").innerHTML =
+          `<div class="empty-state"><p>Erro ao carregar tarefas.</p></div>`;
+      }
+    }
+
+    async function updateTask(taskId, newStatus) {
+      try {
+        const res = await fetch(`${API}/tasks/${taskId}/status`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ status: newStatus }),
+        });
+        if (res.ok) loadTasks();
+      } catch {
+        alert("Erro ao atualizar tarefa.");
+      }
+    }
+
+    loadTasks();
+  </script>
+</body>
+</html>

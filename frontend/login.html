@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vem Aqui — Entrar</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="auth-wrapper">
+    <div class="auth-card">
+
+      <div class="auth-logo">
+        <h1>Vem Aqui</h1>
+        <p>Área do parceiro</p>
+      </div>
+
+      <div id="alert" class="alert"></div>
+
+      <!-- Passo 1: E-mail -->
+      <div id="step-email" class="auth-step active">
+        <h2>Bem-vindo!</h2>
+        <p>Informe seu e-mail para receber o código de acesso.</p>
+
+        <form id="form-email">
+          <div class="form-group">
+            <label for="email">E-mail</label>
+            <input type="email" id="email" placeholder="seu@email.com" required autocomplete="email" />
+          </div>
+          <button type="submit" class="btn btn-primary" id="btn-email">Enviar código</button>
+        </form>
+      </div>
+
+      <!-- Passo 2: OTP -->
+      <div id="step-otp" class="auth-step">
+        <h2>Código enviado</h2>
+        <p id="otp-hint">Digite o código de 6 dígitos enviado para o seu e-mail.</p>
+
+        <form id="form-otp">
+          <div class="form-group">
+            <label for="otp">Código</label>
+            <input
+              type="text"
+              id="otp"
+              class="otp-input"
+              placeholder="000000"
+              maxlength="6"
+              inputmode="numeric"
+              required
+            />
+          </div>
+          <button type="submit" class="btn btn-primary" id="btn-otp">Entrar</button>
+          <button type="button" class="btn-link" id="btn-resend">Reenviar código</button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="js/auth.js"></script>
+</body>
+</html>

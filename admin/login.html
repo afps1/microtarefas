@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vem Aqui — Admin</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="auth-wrapper">
+    <div class="auth-card">
+
+      <div class="auth-logo">
+        <h1>Vem Aqui</h1>
+        <p>Painel administrativo</p>
+      </div>
+
+      <div id="alert" class="alert"></div>
+
+      <form id="form-login">
+        <div class="form-group">
+          <label for="email">E-mail</label>
+          <input type="email" id="email" placeholder="admin@vemaqui.com" required autocomplete="email" />
+        </div>
+        <div class="form-group">
+          <label for="password">Senha</label>
+          <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password" />
+        </div>
+        <button type="submit" class="btn btn-primary" id="btn-login" data-label="Entrar">Entrar</button>
+      </form>
+
+    </div>
+  </div>
+
+  <script>
+    const API = "http://localhost:8001";
+
+    if (localStorage.getItem("admin_token")) {
+      window.location.href = "dashboard.html";
+    }
+
+    const alertEl = document.getElementById("alert");
+
+    function showAlert(msg) {
+      alertEl.textContent = msg;
+      alertEl.className = "alert alert-error show";
+    }
+
+    document.getElementById("form-login").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      alertEl.className = "alert";
+
+      const btn = document.getElementById("btn-login");
+      btn.disabled = true;
+      btn.textContent = "Aguarde...";
+
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      try {
+        const res = await fetch(`${API}/auth/admin/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          showAlert(data.detail || "Credenciais inválidas.");
+          return;
+        }
+
+        localStorage.setItem("admin_token", data.access_token);
+        localStorage.setItem("admin", JSON.stringify(data.admin));
+        window.location.href = "dashboard.html";
+      } catch {
+        showAlert("Erro de conexão com o servidor.");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = btn.dataset.label;
+      }
+    });
+  </script>
+</body>
+</html>

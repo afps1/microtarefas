@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vem Aqui — Admin</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-logo">Vem Aqui</div>
+      <nav id="sidebar-nav"></nav>
+      <div class="sidebar-footer">
+        <div id="admin-info" style="font-size:12px;color:#94a3b8;margin-bottom:10px;"></div>
+        <button onclick="logout()">Sair</button>
+      </div>
+    </aside>
+
+    <main class="main" id="main-content"></main>
+  </div>
+
+  <script>
+    const API = "http://localhost:8001";
+    const token = localStorage.getItem("admin_token");
+    const admin = JSON.parse(localStorage.getItem("admin") || "null");
+
+    if (!token || !admin) { window.location.href = "login.html"; }
+
+    // Exibe nome e role no rodapé da sidebar
+    const roleLabel = admin.role === "geral" ? "Admin Geral" : "Admin Condomínio";
+    document.getElementById("admin-info").textContent = `${admin.name}\n${roleLabel}`;
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = "login.html";
+    }
+
+    // ── Navegação por role ──
+
+    const menuGeral = [
+      { section: "condominiums", label: "Condomínios" },
+      { section: "condo-admins", label: "Admins de Condomínio" },
+    ];
+
+    const menuCondominio = [
+      { section: "stats", label: "Visão geral" },
+      { section: "runners", label: "Parceiros" },
+      { section: "residents", label: "Moradores" },
+      { section: "tasks", label: "Tarefas" },
+    ];
+
+    const menu = admin.role === "geral" ? menuGeral : menuCondominio;
+
+    function buildNav() {
+      const nav = document.getElementById("sidebar-nav");
+      nav.innerHTML = menu.map(m =>
+        `<a href="#" data-section="${m.section}">${m.label}</a>`
+      ).join("");
+
+      nav.querySelectorAll("a").forEach(link => {
+        link.addEventListener("click", (e) => {
+          e.preventDefault();
+          nav.querySelectorAll("a").forEach(l => l.classList.remove("active"));
+          link.classList.add("active");
+          sections[link.dataset.section]?.();
+        });
+      });
+
+      // Carrega a primeira seção
+      nav.querySelector("a")?.click();
+    }
+
+    async function apiFetch(path, options = {}) {
+      const res = await fetch(`${API}${path}`, {
+        ...options,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          ...(options.headers || {}),
+        },
+      });
+      if (res.status === 401) { logout(); return null; }
+      return res;
+    }
+
+    // ── Seções Admin Geral ──
+
+    function renderCondominiums() {
+      document.getElementById("main-content").innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+          <div class="page-title" style="margin:0">Condomínios</div>
+          <button class="btn btn-primary" style="width:auto;padding:10px 20px;" onclick="showCondoForm()">+ Novo</button>
+        </div>
+        <div id="condo-form" style="display:none;" class="card" style="padding:20px;margin-bottom:20px;">
+          <div class="card-header">Novo Condomínio</div>
+          <div style="padding:20px;">
+            <div class="form-group"><label>Nome</label><input type="text" id="condo-name" /></div>
+            <div class="form-group"><label>Endereço</label><input type="text" id="condo-addr" /></div>
+            <button class="btn btn-primary" onclick="createCondo()" style="max-width:200px;">Salvar</button>
+          </div>
+        </div>
+        <div class="card">
+          <table><thead><tr><th>Nome</th><th>Endereço</th><th>Moradores</th><th>Parceiros</th><th>Ativo</th><th></th></tr></thead>
+          <tbody id="condo-tbody"></tbody></table>
+        </div>`;
+      loadCondominiums();
+    }
+
+    async function loadCondominiums() {
+      const res = await apiFetch("/admin/geral/condominiums");
+      if (!res) return;
+      const data = await res.json();
+      const tbody = document.getElementById("condo-tbody");
+      if (!data.length) { tbody.innerHTML = `<tr class="empty-row"><td colspan="6">Nenhum condomínio.</td></tr>`; return; }
+      tbody.innerHTML = data.map(c => `
+        <tr>
+          <td>${c.name}</td><td>${c.address || "—"}</td>
+          <td>${c.residents_count}</td><td>${c.runners_count}</td>
+          <td>${c.active ? "✅" : "❌"}</td>
+          <td><button class="btn-sm ${c.active ? "btn-block" : "btn-approve"}" onclick="toggleCondo(${c.id}, ${!c.active})">${c.active ? "Desativar" : "Ativar"}</button></td>
+        </tr>`).join("");
+    }
+
+    function showCondoForm() {
+      const f = document.getElementById("condo-form");
+      f.style.display = f.style.display === "none" ? "block" : "none";
+    }
+
+    async function createCondo() {
+      const name = document.getElementById("condo-name").value.trim();
+      const address = document.getElementById("condo-addr").value.trim();
+      if (!name) return alert("Nome obrigatório");
+      const res = await apiFetch("/admin/geral/condominiums", { method: "POST", body: JSON.stringify({ name, address }) });
+      if (res?.ok) { document.getElementById("condo-form").style.display = "none"; loadCondominiums(); }
+    }
+
+    async function toggleCondo(id, active) {
+      await apiFetch(`/admin/geral/condominiums/${id}`, { method: "PATCH", body: JSON.stringify({ active }) });
+      loadCondominiums();
+    }
+
+    function renderCondoAdmins() {
+      document.getElementById("main-content").innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+          <div class="page-title" style="margin:0">Admins de Condomínio</div>
+          <button class="btn btn-primary" style="width:auto;padding:10px 20px;" onclick="showAdminForm()">+ Novo</button>
+        </div>
+        <div id="admin-form" style="display:none;" class="card" style="margin-bottom:20px;">
+          <div class="card-header">Novo Admin</div>
+          <div style="padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div class="form-group"><label>Nome</label><input type="text" id="a-name" /></div>
+            <div class="form-group"><label>E-mail</label><input type="email" id="a-email" /></div>
+            <div class="form-group"><label>Senha</label><input type="password" id="a-pass" /></div>
+            <div class="form-group"><label>Condomínio</label>
+              <select id="a-condo" style="width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:7px;font-size:14px;"></select>
+            </div>
+          </div>
+          <div style="padding:0 20px 20px;"><button class="btn btn-primary" onclick="createAdminCondo()" style="max-width:200px;">Salvar</button></div>
+        </div>
+        <div class="card">
+          <table><thead><tr><th>Nome</th><th>E-mail</th><th>Condomínio</th><th>Ativo</th><th></th></tr></thead>
+          <tbody id="admins-tbody"></tbody></table>
+        </div>`;
+      loadCondoAdmins();
+    }
+
+    async function loadCondoAdmins() {
+      const [resAdmins, resCondos] = await Promise.all([
+        apiFetch("/admin/geral/admins"),
+        apiFetch("/admin/geral/condominiums"),
+      ]);
+      if (!resAdmins || !resCondos) return;
+      const admins = await resAdmins.json();
+      const condos = await resCondos.json();
+
+      // popula select
+      const sel = document.getElementById("a-condo");
+      if (sel) {
+        sel.innerHTML = condos.map(c => `<option value="${c.id}">${c.name}</option>`).join("");
+      }
+
+      const tbody = document.getElementById("admins-tbody");
+      if (!admins.length) { tbody.innerHTML = `<tr class="empty-row"><td colspan="5">Nenhum admin cadastrado.</td></tr>`; return; }
+      tbody.innerHTML = admins.map(a => `
+        <tr>
+          <td>${a.name}</td><td>${a.email}</td><td>${a.condominium_name || "—"}</td>
+          <td>${a.active ? "✅" : "❌"}</td>
+          <td><button class="btn-sm ${a.active ? "btn-block" : "btn-approve"}" onclick="toggleAdmin(${a.id})">${a.active ? "Desativar" : "Ativar"}</button></td>
+        </tr>`).join("");
+    }
+
+    function showAdminForm() {
+      const f = document.getElementById("admin-form");
+      f.style.display = f.style.display === "none" ? "block" : "none";
+    }
+
+    async function createAdminCondo() {
+      const body = {
+        name: document.getElementById("a-name").value.trim(),
+        email: document.getElementById("a-email").value.trim(),
+        password: document.getElementById("a-pass").value,
+        condominium_id: parseInt(document.getElementById("a-condo").value),
+      };
+      if (!body.name || !body.email || !body.password) return alert("Preencha todos os campos");
+      const res = await apiFetch("/admin/geral/admins", { method: "POST", body: JSON.stringify(body) });
+      if (res?.ok) { document.getElementById("admin-form").style.display = "none"; loadCondoAdmins(); }
+      else { const d = await res.json(); alert(d.detail || "Erro"); }
+    }
+
+    async function toggleAdmin(id) {
+      await apiFetch(`/admin/geral/admins/${id}/active`, { method: "PATCH" });
+      loadCondoAdmins();
+    }
+
+    // ── Seções Admin Condomínio ──
+
+    function renderStats() {
+      document.getElementById("main-content").innerHTML = `
+        <div class="page-title">Visão geral</div>
+        <div class="stats-grid" id="stats"></div>`;
+      loadStats();
+    }
+
+    async function loadStats() {
+      const res = await apiFetch("/admin/condominio/stats");
+      if (!res) return;
+      const d = await res.json();
+      document.getElementById("stats").innerHTML = `
+        <div class="stat-card"><div class="value">${d.total_tasks_today}</div><div class="label">Tarefas hoje</div></div>
+        <div class="stat-card"><div class="value">${d.active_runners}</div><div class="label">Parceiros ativos</div></div>
+        <div class="stat-card"><div class="value">${d.residents}</div><div class="label">Moradores</div></div>
+        <div class="stat-card"><div class="value">${d.pending_runners}</div><div class="label">Aprovações pendentes</div></div>`;
+    }
+
+    function renderRunners() {
+      document.getElementById("main-content").innerHTML = `
+        <div class="page-title">Parceiros</div>
+        <div class="card">
+          <table><thead><tr><th>Nome</th><th>E-mail</th><th>Telefone</th><th>Pix</th><th>Status</th><th>Ações</th></tr></thead>
+          <tbody id="runners-tbody"></tbody></table>
+        </div>`;
+      loadRunners();
+    }
+
+    async function loadRunners() {
+      const res = await apiFetch("/admin/condominio/runners");
+      if (!res) return;
+      const data = await res.json();
+      const tbody = document.getElementById("runners-tbody");
+      if (!data.length) { tbody.innerHTML = `<tr class="empty-row"><td colspan="6">Nenhum parceiro.</td></tr>`; return; }
+      tbody.innerHTML = data.map(r => `
+        <tr>
+          <td>${r.name}</td><td>${r.email}</td><td>${r.phone}</td><td>${r.pix_key || "—"}</td>
+          <td><span class="badge badge-${r.status}">${r.status}</span></td>
+          <td style="display:flex;gap:6px;">
+            ${r.status !== "approved" ? `<button class="btn-sm btn-approve" onclick="setRunnerStatus(${r.id},'approved')">Aprovar</button>` : ""}
+            ${r.status !== "blocked" ? `<button class="btn-sm btn-block" onclick="setRunnerStatus(${r.id},'blocked')">Bloquear</button>` : ""}
+          </td>
+        </tr>`).join("");
+    }
+
+    async function setRunnerStatus(id, status) {
+      await apiFetch(`/admin/condominio/runners/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) });
+      loadRunners();
+    }
+
+    function renderResidents() {
+      document.getElementById("main-content").innerHTML = `
+        <div class="page-title">Moradores</div>
+        <div class="card">
+          <table><thead><tr><th>Nome</th><th>Telefone</th><th>Ap.</th><th>Ativo</th><th></th></tr></thead>
+          <tbody id="residents-tbody"></tbody></table>
+        </div>`;
+      loadResidents();
+    }
+
+    async function loadResidents() {
+      const res = await apiFetch("/admin/condominio/residents");
+      if (!res) return;
+      const data = await res.json();
+      const tbody = document.getElementById("residents-tbody");
+      if (!data.length) { tbody.innerHTML = `<tr class="empty-row"><td colspan="5">Nenhum morador.</td></tr>`; return; }
+      tbody.innerHTML = data.map(r => `
+        <tr>
+          <td>${r.name}</td><td>${r.phone}</td><td>${r.apartment}</td>
+          <td>${r.active ? "✅" : "❌"}</td>
+          <td><button class="btn-sm ${r.active ? "btn-block" : "btn-approve"}" onclick="toggleResident(${r.id})">${r.active ? "Desativar" : "Ativar"}</button></td>
+        </tr>`).join("");
+    }
+
+    async function toggleResident(id) {
+      await apiFetch(`/admin/condominio/residents/${id}/active`, { method: "PATCH" });
+      loadResidents();
+    }
+
+    function renderTasks() {
+      document.getElementById("main-content").innerHTML = `
+        <div class="page-title">Tarefas</div>
+        <div class="card">
+          <table><thead><tr><th>Tipo</th><th>Morador</th><th>Parceiro</th><th>Status</th><th>Data</th></tr></thead>
+          <tbody id="tasks-tbody"></tbody></table>
+        </div>`;
+      loadTasks();
+    }
+
+    async function loadTasks() {
+      const res = await apiFetch("/admin/condominio/tasks");
+      if (!res) return;
+      const data = await res.json();
+      const tbody = document.getElementById("tasks-tbody");
+      if (!data.length) { tbody.innerHTML = `<tr class="empty-row"><td colspan="5">Nenhuma tarefa.</td></tr>`; return; }
+      const statusPt = { solicitado:"Solicitado", aceito:"Aceito", em_execucao:"Em execução", concluido:"Concluído", recebido:"Recebido" };
+      tbody.innerHTML = data.map(t => `
+        <tr>
+          <td>${t.type}</td><td>${t.resident_name}</td><td>${t.runner_name || "—"}</td>
+          <td>${statusPt[t.status] || t.status}</td>
+          <td>${new Date(t.created_at).toLocaleString("pt-BR")}</td>
+        </tr>`).join("");
+    }
+
+    // ── Mapa de seções ──
+
+    const sections = {
+      condominiums: renderCondominiums,
+      "condo-admins": renderCondoAdmins,
+      stats: renderStats,
+      runners: renderRunners,
+      residents: renderResidents,
+      tasks: renderTasks,
+    };
+
+    buildNav();
+  </script>
+</body>
+</html>

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vem Aqui — Seja um Parceiro</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="auth-wrapper">
+    <div class="auth-card">
+
+      <div class="auth-logo">
+        <h1>Vem Aqui</h1>
+        <p>Quero ser parceiro</p>
+      </div>
+
+      <div id="alert" class="alert"></div>
+
+      <div id="form-section">
+        <form id="form-cadastro">
+          <div class="form-group">
+            <label for="name">Nome completo</label>
+            <input type="text" id="name" placeholder="Maria Souza" required />
+          </div>
+          <div class="form-group">
+            <label for="phone">WhatsApp (com DDD)</label>
+            <input type="text" id="phone" placeholder="11999999999" required inputmode="numeric" />
+          </div>
+          <div class="form-group">
+            <label for="email">E-mail</label>
+            <input type="email" id="email" placeholder="maria@email.com" required />
+          </div>
+          <div class="form-group">
+            <label for="pix_key">Chave Pix</label>
+            <input type="text" id="pix_key" placeholder="CPF, e-mail ou telefone" />
+          </div>
+          <div class="form-group">
+            <label for="condominium">Condomínio</label>
+            <select id="condominium" required style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:15px;background:#fff;outline:none;">
+              <option value="">Selecione...</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary" id="btn-submit" data-label="Enviar cadastro">Enviar cadastro</button>
+        </form>
+      </div>
+
+      <div id="success-section" style="display:none;text-align:center;padding:16px 0;">
+        <div style="font-size:48px;margin-bottom:16px;">🎉</div>
+        <h2 style="margin-bottom:8px;">Cadastro enviado!</h2>
+        <p id="success-msg" style="color:var(--muted);font-size:14px;"></p>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const API = "http://localhost:8001";
+    const alertEl = document.getElementById("alert");
+
+    function showAlert(msg, type = "error") {
+      alertEl.textContent = msg;
+      alertEl.className = `alert alert-${type} show`;
+    }
+
+    async function loadCondominiums() {
+      try {
+        const res = await fetch(`${API}/cadastro/condominiums`);
+        const data = await res.json();
+        const sel = document.getElementById("condominium");
+        data.forEach(c => {
+          const opt = document.createElement("option");
+          opt.value = c.id;
+          opt.textContent = c.name;
+          sel.appendChild(opt);
+        });
+      } catch {
+        showAlert("Erro ao carregar condomínios.");
+      }
+    }
+
+    document.getElementById("form-cadastro").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      alertEl.className = "alert";
+
+      const btn = document.getElementById("btn-submit");
+      btn.disabled = true;
+      btn.textContent = "Aguarde...";
+
+      const body = {
+        name: document.getElementById("name").value.trim(),
+        phone: document.getElementById("phone").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        pix_key: document.getElementById("pix_key").value.trim() || null,
+        condominium_id: parseInt(document.getElementById("condominium").value),
+      };
+
+      try {
+        const res = await fetch(`${API}/cadastro/parceiro`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          showAlert(data.detail || "Erro ao cadastrar.");
+          return;
+        }
+
+        document.getElementById("form-section").style.display = "none";
+        document.getElementById("success-msg").textContent = data.message;
+        document.getElementById("success-section").style.display = "block";
+      } catch {
+        showAlert("Erro de conexão com o servidor.");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = btn.dataset.label;
+      }
+    });
+
+    loadCondominiums();
+  </script>
+</body>
+</html>
