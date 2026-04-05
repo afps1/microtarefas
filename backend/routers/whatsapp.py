@@ -48,7 +48,9 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
             return {"status": "no_message"}
 
         msg = messages[0]
-        phone = msg["from"]
+        raw_phone = msg["from"]
+        # WhatsApp envia com DDI (ex: 5511999999999), normaliza removendo o 55
+        phone = raw_phone[2:] if raw_phone.startswith("55") and len(raw_phone) == 13 else raw_phone
         text = msg.get("text", {}).get("body", "").strip()
 
         if not text:
