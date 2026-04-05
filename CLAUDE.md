@@ -1,8 +1,12 @@
-SISTEMA DE MICROTAREFAS HIPERLOCAIS (SHORT-MILE) - DOCUMENTO CONSOLIDADO
+SISTEMA DE MICROTAREFAS HIPERLOCAIS (SHORT-MILE) — VEM AQUI
 
 1. VISÃO GERAL
 
-Plataforma para execução de microtarefas dentro de condomínios, conectando moradores (demanda) e runners (execução), com uso de WhatsApp como interface principal e webapps leves para operação.
+Plataforma para execução de microtarefas dentro de condomínios, conectando moradores (demanda) e parceiros (execução), com uso de WhatsApp como interface principal e webapps leves para operação.
+
+Nome do produto: Vem Aqui
+Repositório: github.com/afps1/microtarefas
+Deploy: https://microtarefas-production.up.railway.app
 
 Objetivo:
 Eliminar tarefas repetitivas e inconvenientes do dia a dia do morador com rapidez e simplicidade.
@@ -22,184 +26,186 @@ Características:
 
 ---
 
-3. ARQUITETURA
+3. NOMENCLATURA
 
-3.1 Camadas
+- Executor da tarefa = PARCEIRO (nunca "runner" — evitar termos em inglês)
+- Solicitante = morador
+- Produto = Vem Aqui
+
+---
+
+4. ARQUITETURA
+
+4.1 Camadas
 
 Morador:
-- cadastro via web
-- uso via WhatsApp
+- cadastro via web (admin cadastra, ou formulário público)
+- uso exclusivamente via WhatsApp
 
-Runner:
-- cadastro via web
-- operação via WhatsApp + magic link + webapp
+Parceiro:
+- cadastro via web (admin ou formulário)
+- aprovação manual pelo admin do condomínio
+- operação via webapp (dashboard com auto-refresh a cada 8s)
+- NÃO recebe notificação por WhatsApp — usa polling no dashboard
 
 Admin:
-- painel web multi-condomínio
+- dois níveis: Admin Geral (empresa) e Admin Condomínio (síndico)
+- painel web desktop
 
 Backend:
 - orquestra pedidos
 - identifica usuários por telefone
-- envia mensagens WhatsApp
+- envia mensagens WhatsApp ao morador
 - controla estado das tarefas
 
 ---
 
-3.2 Multi-condomínio
-
-Sistema deve suportar múltiplos condomínios:
+4.2 Multi-condomínio
 
 - cada usuário pertence a um condomínio
-- runners só recebem tarefas do seu condomínio
-- regras e preços são configuráveis por condomínio
+- parceiros só veem tarefas do seu condomínio
+- serviços e preços configuráveis por condomínio (tabela service_types)
 
 ---
 
-4. FLUXO OPERACIONAL
+5. FLUXO OPERACIONAL
 
-4.1 Morador
+5.1 Morador (via WhatsApp)
 
-1. envia mensagem no WhatsApp:
-   "quero levar o lixo"
-2. sistema interpreta intenção
-3. confirma serviço e valor
-4. busca runner
-5. informa runner escolhido
-
----
-
-4.2 Runner
-
-1. recebe mensagem com magic link
-2. clica no link
-3. abre webapp já autenticado
-4. vê tarefa
-5. clica "Aceitar"
-6. executa
-7. marca "Concluído"
-8. marca "Recebi"
+1. envia mensagem: "quero levar o lixo"
+2. GPT-4 mini interpreta intenção
+3. bot responde com serviço + preço: "Você quer: Levar lixo — R$ 15,00. Confirma? Responda sim ou não."
+4. morador confirma → tarefa criada (status: solicitado)
+5. parceiro aceita → morador recebe: "✅ [Nome] aceitou sua tarefa e está a caminho!"
+6. parceiro marca em execução → morador recebe notificação
+7. parceiro marca concluído → morador recebe: valor + chave Pix do parceiro
+8. parceiro marca recebido → morador recebe pedido de avaliação (1–5)
+9. morador responde com número → avaliação registrada
 
 ---
 
-4.3 Pagamento
+5.2 Parceiro (via webapp)
 
-- pagamento via Pix direto (fora da plataforma)
-- fluxo padrão: pagar depois
+1. acessa dashboard (login OTP por e-mail)
+2. dashboard atualiza a cada 8s automaticamente
+3. nova tarefa: alerta sonoro (beep 880Hz) + vibração (Android)
+4. clica "Aceitar" → tarefa reservada para ele (transacional)
+5. avança status: aceito → em_execucao → concluido → recebido
 
 ---
 
-5. MAGIC LINK E SEGURANÇA
+5.3 Pagamento
 
-Cada runner recebe link único contendo:
-
-- task_id
-- runner_id
-- token/OTP único
-- expiração curta
-
-Regras:
-- link individual
-- expira rapidamente (3–10 min)
-- não reserva tarefa automaticamente
-- aceitação é transacional no backend
+- Pix direto do morador para o parceiro (fora da plataforma)
+- sistema envia chave Pix do parceiro ao morador quando tarefa é concluída
+- empresa não intermedia financeiramente
 
 ---
 
 6. STATUS DA TAREFA
 
-- solicitado
-- aceito
-- em execução
-- concluído
-- recebido
+solicitado → aceito → em_execucao → concluido → recebido
 
 ---
 
-7. PORTARIA
+7. MODELO ECONÔMICO
 
-Sem uso de app.
-
-Validação por:
-- nome do runner
-- apartamento
-- autorização verbal
-- eventualmente código simples
+- Fee mensal do condomínio para a empresa (B2B, MRR)
+- Sem intermediação financeira de transações
+- Futuro: assinatura parceiro, fee por condomínio
 
 ---
 
-8. PIX E PAGAMENTO
+8. CADASTRO
 
-- QR Code Pix contém payload "copia e cola"
-- runner pode escanear QR do mercadinho
-- sistema extrai string e envia ao morador
+8.1 Morador
+- nome, telefone, apartamento, e-mail (opcional)
+- cadastrado pelo admin do condomínio ou formulário público
+- validação: OTP (mockado no MVP — apenas loga no console)
 
-Fluxo mercadinho:
-1. runner escaneia QR
-2. sistema envia código
-3. morador paga
-4. runner retira produto
-
----
-
-9. CADASTRO
-
-9.1 Morador
-
-- nome
-- telefone
-- apartamento
-- condomínio
-- validação por OTP
+8.2 Parceiro
+- nome, telefone, e-mail, chave Pix
+- status: pending → approved (aprovação manual pelo admin)
+- foto: campo existe no modelo, não obrigatório no MVP
 
 ---
 
-9.2 Runner
+9. ADMIN
 
-- nome completo
-- telefone validado
-- foto
-- chave Pix
-- status (pendente/aprovado)
+9.1 Admin Geral
+- cadastra e gerencia condomínios
+- cadastra admins de condomínio
 
-Aprovação manual obrigatória
-
----
-
-10. ADMIN
-
-- gerenciamento de condomínios
-- aprovação de runners
-- gestão de moradores
-- visualização de pedidos
-- configuração de preços
+9.2 Admin Condomínio (síndico)
+- visão geral (stats do dia)
+- serviços e preços (CRUD completo, preço em centavos no DB)
+- parceiros: aprovar, bloquear, editar, remover + nota média
+- moradores: ativar/desativar, editar, remover
+- tarefas: listagem com tipo, morador, parceiro, status, nota, data
 
 ---
 
-11. MODELO ECONÔMICO
-
-Inicial:
-- sem intermediação financeira
-
-Futuro:
-- assinatura runner
-- fee condomínio
-
----
-
-12. TECNOLOGIA
+10. TECNOLOGIA
 
 Backend:
-- FastAPI
-- PostgreSQL
-
-Frontend:
-- WebApp (PWA)
+- FastAPI + Python 3.11
+- MySQL (Railway plugin)
+  - Variáveis: DB_HOST, DB_NAME, DB_USER, DB_PASS
+- SQLAlchemy ORM
 
 WhatsApp:
-- API oficial
+- API oficial da Meta
+  - Variáveis: VERIFY_TOKEN, WHATSAPP_TOKEN, WHATSAPP_MSG_URL
 
-QR Code:
-- leitura via JS ou Android
+IA / NLP:
+- GPT-4 mini (OpenAI)
+  - Variáveis: OPENAI_API_KEY, OPENAI_MODEL, OPENAI_API_URL
+  - URL correta: https://api.openai.com/v1/chat/completions
+
+Frontend parceiro:
+- HTML + JavaScript responsivo (mobile-first)
+- Autenticação JWT stateless via OTP por e-mail (mockado no MVP)
+- Auto-refresh a cada 8s com alerta sonoro + vibração
+
+Admin:
+- HTML + JavaScript para desktop
+- Autenticação: e-mail + senha (bcrypt + JWT)
+
+Infra:
+- GitHub: conta afps1
+- Deploy: Railway (serviço microtarefas + plugin MySQL)
+- Porta: 8080
+
+Estrutura:
+microtarefas/
+├── backend/        ← FastAPI
+├── frontend/       ← webapp do parceiro (/app)
+└── admin/          ← painel admin (/admin)
+
+---
+
+11. MODELOS DE BANCO (principais)
+
+- Condominium, Resident, Runner (= parceiro), AdminUser, Task
+- ServiceType — serviços com preço por condomínio (price em centavos)
+- PendingRequest — pedido aguardando confirmação do morador
+- MagicLink — tokens para autenticação (parceiro)
+- OtpCode — OTP de e-mail
+- Rating — avaliação do parceiro (1–5) por tarefa
+
+Normalização de telefone:
+- DB armazena sem o 55 (ex: 11994840515)
+- Meta envia com 55 (ex: 5511994840515)
+- wa_phone() adiciona "55" na hora de enviar
+- webhook strip "55" na hora de receber
+
+---
+
+12. ENDPOINTS TEMPORÁRIOS
+
+POST /migrate/run?key=vemaqui123 — executa DDL de migração
+POST /migrate/clean-tasks?key=vemaqui123 — limpa tarefas/ratings
+POST /setup/admin?key={SETUP_KEY} — cria primeiro admin geral
 
 ---
 
@@ -213,17 +219,6 @@ QR Code:
 
 ---
 
-14. INSIGHT CENTRAL
-
-O valor não está no app.
-
-Está em:
-- proximidade
-- recorrência
-- execução rápida
-
----
-
-15. OBJETIVO FINAL
+14. OBJETIVO FINAL
 
 Criar uma infraestrutura de execução física hiperlocal escalável, iniciando em condomínios e expandindo para outros microterritórios.
