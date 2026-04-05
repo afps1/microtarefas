@@ -5,9 +5,10 @@ import os
 
 load_dotenv()
 
+_port = os.getenv('DB_PORT', '3306')
 DATABASE_URL = (
     f"mysql+pymysql://{os.getenv('DB_USER')}:{os.getenv('DB_PASS')}"
-    f"@{os.getenv('DB_HOST')}/{os.getenv('DB_NAME')}"
+    f"@{os.getenv('DB_HOST')}:{_port}/{os.getenv('DB_NAME')}"
 )
 
 engine = create_engine(DATABASE_URL)
