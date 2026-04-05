@@ -281,20 +281,55 @@
       if (!res) return;
       const data = await res.json();
       const tbody = document.getElementById("runners-tbody");
-      if (!data.length) { tbody.innerHTML = `<tr class="empty-row"><td colspan="6">Nenhum parceiro.</td></tr>`; return; }
+      if (!data.length) { tbody.innerHTML = `<tr class="empty-row"><td colspan="7">Nenhum parceiro.</td></tr>`; return; }
       tbody.innerHTML = data.map(r => `
-        <tr>
+        <tr id="runner-row-${r.id}">
           <td>${r.name}</td><td>${r.email}</td><td>${r.phone}</td><td>${r.pix_key || "—"}</td>
           <td><span class="badge badge-${r.status}">${r.status}</span></td>
           <td style="display:flex;gap:6px;">
             ${r.status !== "approved" ? `<button class="btn-sm btn-approve" onclick="setRunnerStatus(${r.id},'approved')">Aprovar</button>` : ""}
             ${r.status !== "blocked" ? `<button class="btn-sm btn-block" onclick="setRunnerStatus(${r.id},'blocked')">Bloquear</button>` : ""}
           </td>
+          <td style="display:flex;gap:6px;">
+            <button class="btn-sm" style="background:#e0f2fe;color:#0369a1;" onclick="editRunner(${r.id},'${r.name}','${r.phone}','${r.email}','${r.pix_key||''}')">Editar</button>
+            <button class="btn-sm btn-block" onclick="deleteRunner(${r.id})">Remover</button>
+          </td>
         </tr>`).join("");
     }
 
     async function setRunnerStatus(id, status) {
       await apiFetch(`/admin/condominio/runners/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) });
+      loadRunners();
+    }
+
+    function editRunner(id, name, phone, email, pix) {
+      const row = document.getElementById(`runner-row-${id}`);
+      row.innerHTML = `
+        <td><input type="text" value="${name}" id="er-name-${id}" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:5px;" /></td>
+        <td><input type="email" value="${email}" id="er-email-${id}" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:5px;" /></td>
+        <td><input type="text" value="${phone}" id="er-phone-${id}" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:5px;" /></td>
+        <td><input type="text" value="${pix}" id="er-pix-${id}" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:5px;" /></td>
+        <td colspan="3" style="display:flex;gap:6px;">
+          <button class="btn-sm btn-approve" onclick="saveRunner(${id})">Salvar</button>
+          <button class="btn-sm" style="background:#f3f4f6;" onclick="loadRunners()">Cancelar</button>
+        </td>`;
+    }
+
+    async function saveRunner(id) {
+      const body = {
+        name: document.getElementById(`er-name-${id}`).value.trim(),
+        email: document.getElementById(`er-email-${id}`).value.trim(),
+        phone: document.getElementById(`er-phone-${id}`).value.trim(),
+        pix_key: document.getElementById(`er-pix-${id}`).value.trim() || null,
+      };
+      const res = await apiFetch(`/admin/condominio/runners/${id}`, { method: "PATCH", body: JSON.stringify(body) });
+      if (res?.ok) loadRunners();
+      else { const d = await res.json(); alert(d.detail || "Erro ao salvar"); }
+    }
+
+    async function deleteRunner(id) {
+      if (!confirm("Remover este parceiro?")) return;
+      await apiFetch(`/admin/condominio/runners/${id}`, { method: "DELETE" });
       loadRunners();
     }
 
@@ -345,13 +380,48 @@
       if (!res) return;
       const data = await res.json();
       const tbody = document.getElementById("residents-tbody");
-      if (!data.length) { tbody.innerHTML = `<tr class="empty-row"><td colspan="5">Nenhum morador.</td></tr>`; return; }
+      if (!data.length) { tbody.innerHTML = `<tr class="empty-row"><td colspan="6">Nenhum morador.</td></tr>`; return; }
       tbody.innerHTML = data.map(r => `
-        <tr>
+        <tr id="resident-row-${r.id}">
           <td>${r.name}</td><td>${r.phone}</td><td>${r.apartment}</td>
           <td>${r.active ? "✅" : "❌"}</td>
-          <td><button class="btn-sm ${r.active ? "btn-block" : "btn-approve"}" onclick="toggleResident(${r.id})">${r.active ? "Desativar" : "Ativar"}</button></td>
+          <td style="display:flex;gap:6px;">
+            <button class="btn-sm ${r.active ? "btn-block" : "btn-approve"}" onclick="toggleResident(${r.id})">${r.active ? "Desativar" : "Ativar"}</button>
+          </td>
+          <td style="display:flex;gap:6px;">
+            <button class="btn-sm" style="background:#e0f2fe;color:#0369a1;" onclick="editResident(${r.id},'${r.name}','${r.phone}','${r.apartment}')">Editar</button>
+            <button class="btn-sm btn-block" onclick="deleteResident(${r.id})">Remover</button>
+          </td>
         </tr>`).join("");
+    }
+
+    function editResident(id, name, phone, apartment) {
+      const row = document.getElementById(`resident-row-${id}`);
+      row.innerHTML = `
+        <td><input type="text" value="${name}" id="eres-name-${id}" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:5px;" /></td>
+        <td><input type="text" value="${phone}" id="eres-phone-${id}" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:5px;" /></td>
+        <td><input type="text" value="${apartment}" id="eres-apt-${id}" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:5px;" /></td>
+        <td colspan="3" style="display:flex;gap:6px;">
+          <button class="btn-sm btn-approve" onclick="saveResident(${id})">Salvar</button>
+          <button class="btn-sm" style="background:#f3f4f6;" onclick="loadResidents()">Cancelar</button>
+        </td>`;
+    }
+
+    async function saveResident(id) {
+      const body = {
+        name: document.getElementById(`eres-name-${id}`).value.trim(),
+        phone: document.getElementById(`eres-phone-${id}`).value.trim(),
+        apartment: document.getElementById(`eres-apt-${id}`).value.trim(),
+      };
+      const res = await apiFetch(`/admin/condominio/residents/${id}`, { method: "PATCH", body: JSON.stringify(body) });
+      if (res?.ok) loadResidents();
+      else { const d = await res.json(); alert(d.detail || "Erro ao salvar"); }
+    }
+
+    async function deleteResident(id) {
+      if (!confirm("Remover este morador?")) return;
+      await apiFetch(`/admin/condominio/residents/${id}`, { method: "DELETE" });
+      loadResidents();
     }
 
     async function toggleResident(id) {

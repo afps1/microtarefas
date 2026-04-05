@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
+from typing import Optional
 from database import get_db
 from dependencies import get_admin_condominio
 import models
@@ -9,7 +10,6 @@ router = APIRouter(prefix="/admin/condominio", tags=["admin-condominio"])
 
 
 def _condo_id(admin: models.AdminUser) -> int:
-    """Retorna o condominium_id do admin. Admin geral deve passar ?condo_id explicitamente."""
     if admin.role == "geral":
         raise HTTPException(status_code=400, detail="Admin geral deve usar os endpoints /admin/geral")
     return admin.condominium_id
@@ -17,6 +17,20 @@ def _condo_id(admin: models.AdminUser) -> int:
 
 class StatusUpdate(BaseModel):
     status: str
+
+
+class RunnerUpdate(BaseModel):
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[EmailStr] = None
+    pix_key: Optional[str] = None
+
+
+class ResidentUpdate(BaseModel):
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    apartment: Optional[str] = None
+    email: Optional[EmailStr] = None
 
 
 # ── Parceiros ──
@@ -61,6 +75,47 @@ def update_runner_status(
     return {"id": runner.id, "status": runner.status}
 
 
+@router.patch("/runners/{runner_id}")
+def update_runner(
+    runner_id: int,
+    body: RunnerUpdate,
+    db: Session = Depends(get_db),
+    admin=Depends(get_admin_condominio),
+):
+    condo_id = _condo_id(admin)
+    runner = db.query(models.Runner).filter(
+        models.Runner.id == runner_id,
+        models.Runner.condominium_id == condo_id,
+    ).first()
+    if not runner:
+        raise HTTPException(status_code=404, detail="Parceiro não encontrado")
+
+    if body.name is not None: runner.name = body.name
+    if body.phone is not None: runner.phone = body.phone
+    if body.email is not None: runner.email = body.email
+    if body.pix_key is not None: runner.pix_key = body.pix_key
+
+    db.commit()
+    return {"id": runner.id, "name": runner.name, "email": runner.email, "phone": runner.phone, "pix_key": runner.pix_key}
+
+
+@router.delete("/runners/{runner_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_runner(
+    runner_id: int,
+    db: Session = Depends(get_db),
+    admin=Depends(get_admin_condominio),
+):
+    condo_id = _condo_id(admin)
+    runner = db.query(models.Runner).filter(
+        models.Runner.id == runner_id,
+        models.Runner.condominium_id == condo_id,
+    ).first()
+    if not runner:
+        raise HTTPException(status_code=404, detail="Parceiro não encontrado")
+    db.delete(runner)
+    db.commit()
+
+
 # ── Moradores ──
 
 @router.get("/residents")
@@ -96,6 +151,47 @@ def toggle_resident_active(
     resident.active = not resident.active
     db.commit()
     return {"id": resident.id, "active": resident.active}
+
+
+@router.patch("/residents/{resident_id}")
+def update_resident(
+    resident_id: int,
+    body: ResidentUpdate,
+    db: Session = Depends(get_db),
+    admin=Depends(get_admin_condominio),
+):
+    condo_id = _condo_id(admin)
+    resident = db.query(models.Resident).filter(
+        models.Resident.id == resident_id,
+        models.Resident.condominium_id == condo_id,
+    ).first()
+    if not resident:
+        raise HTTPException(status_code=404, detail="Morador não encontrado")
+
+    if body.name is not None: resident.name = body.name
+    if body.phone is not None: resident.phone = body.phone
+    if body.apartment is not None: resident.apartment = body.apartment
+    if body.email is not None: resident.email = body.email
+
+    db.commit()
+    return {"id": resident.id, "name": resident.name, "phone": resident.phone, "apartment": resident.apartment}
+
+
+@router.delete("/residents/{resident_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_resident(
+    resident_id: int,
+    db: Session = Depends(get_db),
+    admin=Depends(get_admin_condominio),
+):
+    condo_id = _condo_id(admin)
+    resident = db.query(models.Resident).filter(
+        models.Resident.id == resident_id,
+        models.Resident.condominium_id == condo_id,
+    ).first()
+    if not resident:
+        raise HTTPException(status_code=404, detail="Morador não encontrado")
+    db.delete(resident)
+    db.commit()
 
 
 # ── Tarefas ──
