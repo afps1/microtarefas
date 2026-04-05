@@ -28,9 +28,10 @@
 
     if (!token || !admin) { window.location.href = "login.html"; }
 
-    // Exibe nome e role no rodapé da sidebar
+    // Exibe nome, role e condomínio no rodapé da sidebar
     const roleLabel = admin.role === "geral" ? "Admin Geral" : "Admin Condomínio";
-    document.getElementById("admin-info").textContent = `${admin.name}\n${roleLabel}`;
+    const condoLine = admin.condominium_name ? `<div style="font-weight:600;color:#cbd5e1;margin-bottom:2px;">${admin.condominium_name}</div>` : "";
+    document.getElementById("admin-info").innerHTML = `${condoLine}<div>${admin.name}</div><div>${roleLabel}</div>`;
 
     function logout() {
       localStorage.clear();

@@ -24,6 +24,11 @@ def login(body: LoginBody, db: Session = Depends(get_db)):
     if not bcrypt.checkpw(body.password.encode(), admin.password_hash.encode()):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciais inválidas")
 
+    condo_name = None
+    if admin.condominium_id:
+        condo = db.query(models.Condominium).filter(models.Condominium.id == admin.condominium_id).first()
+        condo_name = condo.name if condo else None
+
     token = create_token(admin.id, "admin")
     return {
         "access_token": token,
@@ -34,5 +39,6 @@ def login(body: LoginBody, db: Session = Depends(get_db)):
             "email": admin.email,
             "role": admin.role,
             "condominium_id": admin.condominium_id,
+            "condominium_name": condo_name,
         },
     }
