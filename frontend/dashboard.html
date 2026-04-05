@@ -182,7 +182,7 @@
           body: JSON.stringify({ status: newStatus }),
         });
         if (res.ok) {
-          lastTasksHash = ""; // força re-render na próxima chamada
+          lastTasksHash = null;
           loadTasks();
         } else {
           const d = await res.json();
@@ -289,7 +289,7 @@
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {
-          lastTasksHash = "";
+          lastTasksHash = null;
           loadTasks();
         } else {
           alert("Erro ao cancelar tarefa.");
