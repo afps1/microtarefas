@@ -16,6 +16,16 @@ def run_migration(key: str, db: Session = Depends(get_db)):
         return {"error": "unauthorized"}
 
     sqls = [
+        """CREATE TABLE IF NOT EXISTS pending_requests (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            resident_id INT NOT NULL UNIQUE,
+            task_type VARCHAR(100) NOT NULL,
+            service_type_id INT NULL,
+            description TEXT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (resident_id) REFERENCES residents(id),
+            FOREIGN KEY (service_type_id) REFERENCES service_types(id)
+        )""",
         """CREATE TABLE IF NOT EXISTS service_types (
             id INT AUTO_INCREMENT PRIMARY KEY,
             condominium_id INT NOT NULL,

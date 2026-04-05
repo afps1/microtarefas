@@ -117,6 +117,20 @@ class ServiceType(Base):
     condominium = relationship("Condominium", foreign_keys=[condominium_id])
 
 
+class PendingRequest(Base):
+    __tablename__ = "pending_requests"
+
+    id = Column(Integer, primary_key=True)
+    resident_id = Column(Integer, ForeignKey("residents.id"), nullable=False, unique=True)
+    task_type = Column(String(100), nullable=False)
+    service_type_id = Column(Integer, ForeignKey("service_types.id"), nullable=True)
+    description = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    resident = relationship("Resident", foreign_keys=[resident_id])
+    service_type = relationship("ServiceType", foreign_keys=[service_type_id])
+
+
 class Rating(Base):
     __tablename__ = "ratings"
 

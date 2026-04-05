@@ -1,6 +1,6 @@
 import os
-import secrets
-from datetime import datetime, timedelta, timezone
+import logging
+from datetime import datetime, timezone
 from fastapi import APIRouter, Request, Response, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
@@ -9,13 +9,13 @@ from services.whatsapp_service import send_message
 import models
 
 router = APIRouter(prefix="/whatsapp", tags=["whatsapp"])
+log = logging.getLogger(__name__)
 
 VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", "")
-MAGIC_LINK_EXPIRY_MINUTES = int(os.getenv("MAGIC_LINK_EXPIRY_MINUTES", 10))
 APP_URL = os.getenv("APP_URL", "http://localhost:3000")
 
+
 def wa_phone(phone: str) -> str:
-    """Garante que o número tenha o DDI 55 para envio via API da Meta."""
     return phone if phone.startswith("55") else f"55{phone}"
 
 
@@ -54,7 +54,6 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
 
         msg = messages[0]
         raw_phone = msg["from"]
-        # WhatsApp envia com DDI (ex: 5511999999999), normaliza removendo o 55
         phone = raw_phone[2:] if raw_phone.startswith("55") and len(raw_phone) == 13 else raw_phone
         text = msg.get("text", {}).get("body", "").strip()
 
@@ -64,36 +63,59 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
     except (KeyError, IndexError):
         return {"status": "ignored"}
 
-    import logging
-    logging.getLogger(__name__).warning(f"[WEBHOOK] raw_phone={raw_phone} phone_normalizado={phone}")
+    log.warning(f"[WEBHOOK] raw_phone={raw_phone} phone_normalizado={phone}")
 
     resident = db.query(models.Resident).filter(
         models.Resident.phone == phone,
         models.Resident.active == True,
     ).first()
 
-    logging.getLogger(__name__).warning(f"[WEBHOOK] resident={resident}")
+    log.warning(f"[WEBHOOK] resident={resident}")
 
     if not resident:
         send_message(raw_phone, "Olá! Seu número não está cadastrado. Acesse o link para se cadastrar.")
         return {"status": "unregistered"}
 
-    # Verifica se é uma avaliação pendente (resposta 1-5)
-    if text.strip() in ("1", "2", "3", "4", "5"):
-        if _handle_avaliacao(resident, int(text.strip()), db):
+    text_lower = text.lower().strip()
+
+    # 1. Aguardando confirmação de pedido
+    pending = db.query(models.PendingRequest).filter(
+        models.PendingRequest.resident_id == resident.id
+    ).first()
+
+    if pending:
+        if text_lower in ("sim", "s", "confirmar", "confirma", "ok"):
+            await _confirmar_pedido(resident, pending, db)
+        elif text_lower in ("não", "nao", "n", "cancelar", "cancela"):
+            db.delete(pending)
+            db.commit()
+            send_message(wa_phone(resident.phone), "Pedido cancelado. Quando quiser, é só pedir!")
+        else:
+            service = pending.service_type
+            price_info = f" — *R$ {service.price / 100:.2f}*".replace(".", ",") if service else ""
+            label = service.name if service else TASK_LABELS.get(pending.task_type, pending.task_type)
+            send_message(
+                wa_phone(resident.phone),
+                f"Responda *sim* para confirmar ou *não* para cancelar.\n\n_{label}{price_info}_",
+            )
+        return {"status": "ok"}
+
+    # 2. Avaliação pendente (resposta 1-5)
+    if text_lower in ("1", "2", "3", "4", "5"):
+        if _handle_avaliacao(resident, int(text_lower), db):
             return {"status": "ok"}
 
+    # 3. Interpreta intenção
     result = interpret_message(text)
     intent = result.get("intent")
 
     if intent == "solicitar_tarefa":
-        await _handle_solicitar(resident, result, db)
+        _handle_solicitar(resident, result, db)
     elif intent == "status":
         _handle_status(resident, db)
     elif intent == "cancelar":
         _handle_cancelar(resident, db)
     else:
-        # Monta menu dinâmico com serviços do condomínio
         services = db.query(models.ServiceType).filter(
             models.ServiceType.condominium_id == resident.condominium_id,
             models.ServiceType.active == True,
@@ -102,15 +124,12 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
             menu = "\n".join([f"• {s.name} — R$ {s.price / 100:.2f}".replace(".", ",") for s in services])
         else:
             menu = "• Levar lixo\n• Buscar encomenda\n• Compra no mercadinho"
-        send_message(
-            wa_phone(resident.phone),
-            f"Não entendi. Você pode pedir:\n{menu}",
-        )
+        send_message(wa_phone(resident.phone), f"Não entendi. Você pode pedir:\n{menu}")
 
     return {"status": "ok"}
 
 
-async def _handle_solicitar(resident: models.Resident, gpt_result: dict, db: Session):
+def _handle_solicitar(resident: models.Resident, gpt_result: dict, db: Session):
     # Verifica se já tem tarefa aberta
     open_task = db.query(models.Task).filter(
         models.Task.resident_id == resident.id,
@@ -118,41 +137,76 @@ async def _handle_solicitar(resident: models.Resident, gpt_result: dict, db: Ses
     ).first()
 
     if open_task:
+        label = TASK_LABELS.get(open_task.type, open_task.type)
         send_message(
             wa_phone(resident.phone),
-            f"Você já tem uma tarefa em andamento: *{TASK_LABELS.get(open_task.type, open_task.type)}* ({open_task.status}). Aguarde a conclusão antes de solicitar uma nova.",
+            f"Você já tem uma tarefa em andamento: *{label}* ({open_task.status}). Aguarde a conclusão antes de solicitar uma nova.",
         )
         return
 
     task_type = gpt_result.get("task_type") or "outro"
     description = gpt_result.get("description")
 
-    # Busca serviço correspondente ao tipo identificado pelo GPT
+    # Busca serviço correspondente
     service = db.query(models.ServiceType).filter(
         models.ServiceType.condominium_id == resident.condominium_id,
         models.ServiceType.active == True,
         models.ServiceType.name.ilike(f"%{TASK_LABELS.get(task_type, task_type)}%"),
     ).first()
 
+    # Se não achou pelo label, pega qualquer serviço ativo
+    if not service:
+        service = db.query(models.ServiceType).filter(
+            models.ServiceType.condominium_id == resident.condominium_id,
+            models.ServiceType.active == True,
+        ).first()
+
+    label = service.name if service else TASK_LABELS.get(task_type, task_type)
+    price_info = f" — *R$ {service.price / 100:.2f}*".replace(".", ",") if service else ""
+
+    # Salva pedido pendente aguardando confirmação
+    existing = db.query(models.PendingRequest).filter(
+        models.PendingRequest.resident_id == resident.id
+    ).first()
+    if existing:
+        db.delete(existing)
+
+    pending = models.PendingRequest(
+        resident_id=resident.id,
+        task_type=task_type,
+        service_type_id=service.id if service else None,
+        description=description,
+    )
+    db.add(pending)
+    db.commit()
+
+    send_message(
+        wa_phone(resident.phone),
+        f"Você quer solicitar: *{label}*{price_info}\n\nConfirma? Responda *sim* ou *não*.",
+    )
+
+
+async def _confirmar_pedido(resident: models.Resident, pending: models.PendingRequest, db: Session):
+    service = pending.service_type
     task = models.Task(
         condominium_id=resident.condominium_id,
         resident_id=resident.id,
-        type=task_type,
-        description=description,
+        type=pending.task_type,
+        description=pending.description,
         status="solicitado",
         service_type_id=service.id if service else None,
         price=service.price if service else None,
     )
     db.add(task)
+    db.delete(pending)
     db.flush()
 
-    label = service.name if service else TASK_LABELS.get(task_type, task_type)
+    label = service.name if service else TASK_LABELS.get(pending.task_type, pending.task_type)
     price_info = f" — *R$ {service.price / 100:.2f}*".replace(".", ",") if service else ""
     send_message(
         wa_phone(resident.phone),
-        f"✅ Pedido recebido: *{label}*{price_info}. Estamos buscando um parceiro disponível. Você será avisado em breve!",
+        f"✅ Pedido confirmado: *{label}*{price_info}. Estamos buscando um parceiro disponível. Você será avisado em breve!",
     )
-
     db.commit()
 
 
@@ -163,7 +217,7 @@ def _handle_status(resident: models.Resident, db: Session):
     ).order_by(models.Task.created_at.desc()).first()
 
     if not task:
-        send_message(resident.phone, "Você não tem tarefas em andamento no momento.")
+        send_message(wa_phone(resident.phone), "Você não tem tarefas em andamento no momento.")
         return
 
     label = TASK_LABELS.get(task.type, task.type)
@@ -174,28 +228,36 @@ def _handle_status(resident: models.Resident, db: Session):
     }.get(task.status, task.status)
 
     runner_info = f"\nParceiro: {task.runner.name}" if task.runner else ""
-    send_message(resident.phone, f"📋 *{label}*\nStatus: {status_pt}{runner_info}")
+    send_message(wa_phone(resident.phone), f"📋 *{label}*\nStatus: {status_pt}{runner_info}")
 
 
 def _handle_cancelar(resident: models.Resident, db: Session):
+    # Cancela pedido pendente primeiro
+    pending = db.query(models.PendingRequest).filter(
+        models.PendingRequest.resident_id == resident.id
+    ).first()
+    if pending:
+        db.delete(pending)
+        db.commit()
+        send_message(wa_phone(resident.phone), "Pedido cancelado.")
+        return
+
     task = db.query(models.Task).filter(
         models.Task.resident_id == resident.id,
         models.Task.status == "solicitado",
     ).order_by(models.Task.created_at.desc()).first()
 
     if not task:
-        send_message(resident.phone, "Não há tarefa que possa ser cancelada agora.")
+        send_message(wa_phone(resident.phone), "Não há tarefa que possa ser cancelada agora.")
         return
 
     task.status = "recebido"
     task.updated_at = datetime.now(timezone.utc)
     db.commit()
-
     send_message(wa_phone(resident.phone), "Pedido cancelado com sucesso.")
 
 
 def _handle_avaliacao(resident: models.Resident, score: int, db) -> bool:
-    """Salva avaliação se houver tarefa recém-concluída sem avaliação. Retorna True se processou."""
     task = (
         db.query(models.Task)
         .filter(
