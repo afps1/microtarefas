@@ -65,18 +65,6 @@ def run_migration(key: str, db: Session = Depends(get_db)):
         ("pending_requests", "awaiting_observation", "BOOLEAN NOT NULL DEFAULT FALSE"),
     ]
 
-    # Altera Enum de status das tarefas para incluir 'cancelado'
-    enum_sqls = [
-        "ALTER TABLE tasks MODIFY COLUMN status ENUM('solicitado','aceito','em_execucao','concluido','recebido','cancelado') NOT NULL DEFAULT 'solicitado'",
-    ]
-    for sql in enum_sqls:
-        try:
-            db.execute(text(sql))
-            db.commit()
-            results.append({"sql": sql[:60], "status": "ok"})
-        except Exception as e:
-            results.append({"sql": sql[:60], "status": str(e)})
-
     results = []
     for sql in sqls:
         try:
@@ -100,6 +88,15 @@ def run_migration(key: str, db: Session = Depends(get_db)):
                 results.append({"sql": f"ADD COLUMN {table}.{column}", "status": str(e)})
         else:
             results.append({"sql": f"ADD COLUMN {table}.{column}", "status": "already exists"})
+
+    # Altera Enum de status das tarefas para incluir 'cancelado'
+    alter_sql = "ALTER TABLE tasks MODIFY COLUMN status ENUM('solicitado','aceito','em_execucao','concluido','recebido','cancelado') NOT NULL DEFAULT 'solicitado'"
+    try:
+        db.execute(text(alter_sql))
+        db.commit()
+        results.append({"sql": "ALTER TABLE tasks status enum", "status": "ok"})
+    except Exception as e:
+        results.append({"sql": "ALTER TABLE tasks status enum", "status": str(e)})
 
     return {"results": results}
 
