@@ -104,19 +104,22 @@
         return;
       }
 
+      const hasActive = tasks.some(t => t.is_mine && (t.status === "aceito" || t.status === "em_execucao"));
+
       el.innerHTML = tasks.map(t => `
         <div class="task-card">
           <div class="task-type">${t.type}</div>
           <div class="task-meta">Ap. ${t.resident_apartment} · ${formatDate(t.created_at)}</div>
           <span class="task-status status-${t.status}">${statusLabel[t.status] || t.status}</span>
           ${t.description ? `<div class="task-observation">${svgPin}<span>${t.description}</span></div>` : ""}
-          ${taskActions(t)}
+          ${taskActions(t, hasActive)}
         </div>
       `).join("");
     }
 
-    function taskActions(task) {
+    function taskActions(task, hasActive) {
       if (task.status === "solicitado") {
+        if (hasActive) return `<p style="font-size:13px;color:var(--muted);margin-top:4px;">Conclua sua tarefa atual para aceitar esta.</p>`;
         return `<button class="btn btn-primary" onclick="updateTask(${task.id}, 'aceito')">Aceitar</button>`;
       }
       if (task.status === "aceito") {

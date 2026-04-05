@@ -109,6 +109,13 @@ def update_task_status(
     if body.status == "aceito":
         if task.runner_id is not None and task.runner_id != runner.id:
             raise HTTPException(status_code=409, detail="Tarefa já foi aceita por outro parceiro")
+        # Bloqueia aceitar nova tarefa se já tem uma ativa
+        active = db.query(models.Task).filter(
+            models.Task.runner_id == runner.id,
+            models.Task.status.in_(["aceito", "em_execucao"]),
+        ).first()
+        if active:
+            raise HTTPException(status_code=409, detail="Você já tem uma tarefa em andamento")
         task.runner_id = runner.id
 
     # Garante que só quem aceitou pode avançar
