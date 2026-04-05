@@ -5,7 +5,7 @@ from fastapi import APIRouter, Request, Response, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
 from services.gpt_service import interpret_message
-from services.whatsapp_service import send_message
+from services.whatsapp_service import send_message, get_media_download_url
 import models
 
 router = APIRouter(prefix="/whatsapp", tags=["whatsapp"])
@@ -55,9 +55,19 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
         msg = messages[0]
         raw_phone = msg["from"]
         phone = raw_phone[2:] if raw_phone.startswith("55") and len(raw_phone) == 13 else raw_phone
-        text = msg.get("text", {}).get("body", "").strip()
+        msg_type = msg.get("type", "text")
+        text = ""
+        media_id = None
 
-        if not text:
+        if msg_type == "text":
+            text = msg.get("text", {}).get("body", "").strip()
+            if not text:
+                return {"status": "ignored"}
+        elif msg_type == "image":
+            media_id = msg.get("image", {}).get("id")
+            if not media_id:
+                return {"status": "ignored"}
+        else:
             return {"status": "ignored"}
 
     except (KeyError, IndexError):
@@ -76,7 +86,7 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
         send_message(raw_phone, "Olá! Seu número não está cadastrado. Acesse o link para se cadastrar.")
         return {"status": "unregistered"}
 
-    text_lower = text.lower().strip()
+    text_lower = text.lower().strip() if text else ""
 
     # 1. Aguardando confirmação de pedido
     pending = db.query(models.PendingRequest).filter(
@@ -112,7 +122,31 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
             )
         return {"status": "ok"}
 
-    # 2. Avaliação pendente (resposta 1-5)
+    # 2. Chat durante em_execucao
+    active_task = db.query(models.Task).filter(
+        models.Task.resident_id == resident.id,
+        models.Task.status == "em_execucao",
+    ).first()
+
+    if active_task:
+        if msg_type == "text":
+            db.add(models.TaskMessage(
+                task_id=active_task.id,
+                sender="morador",
+                type="text",
+                content=text,
+            ))
+        elif msg_type == "image" and media_id:
+            db.add(models.TaskMessage(
+                task_id=active_task.id,
+                sender="morador",
+                type="image",
+                content=media_id,
+            ))
+        db.commit()
+        return {"status": "ok"}
+
+    # 3. Avaliação pendente (resposta 1-5)
     if text_lower in ("1", "2", "3", "4", "5"):
         if _handle_avaliacao(resident, int(text_lower), db):
             return {"status": "ok"}

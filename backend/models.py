@@ -147,6 +147,19 @@ class Rating(Base):
     resident = relationship("Resident", foreign_keys=[resident_id])
 
 
+class TaskMessage(Base):
+    __tablename__ = "task_messages"
+
+    id = Column(Integer, primary_key=True)
+    task_id = Column(Integer, ForeignKey("tasks.id"), nullable=False)
+    sender = Column(Enum("parceiro", "morador"), nullable=False)
+    type = Column(Enum("text", "image"), default="text")
+    content = Column(Text, nullable=False)  # texto ou media_id
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    task = relationship("Task", foreign_keys=[task_id])
+
+
 class OtpCode(Base):
     __tablename__ = "otp_codes"
 

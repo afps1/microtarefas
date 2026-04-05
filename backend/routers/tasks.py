@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from datetime import datetime, timezone
 from database import get_db
 from dependencies import get_current_runner
-from services.whatsapp_service import send_message
+from services.whatsapp_service import send_message, send_image, upload_media, get_media_download_url, download_media_bytes
+from services.jwt_service import decode_token
 import models
 
 
@@ -133,6 +135,92 @@ def update_task_status(
             logging.getLogger(__name__).error(f"Erro ao notificar morador: {e}")
 
     return {"id": task.id, "status": task.status}
+
+
+# ── Chat ──
+
+class TextMessage(BaseModel):
+    content: str
+
+
+@router.get("/{task_id}/messages")
+def get_messages(task_id: int, db: Session = Depends(get_db), runner=Depends(get_current_runner)):
+    task = db.query(models.Task).filter(
+        models.Task.id == task_id,
+        models.Task.condominium_id == runner.condominium_id,
+    ).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Tarefa não encontrada")
+
+    messages = db.query(models.TaskMessage).filter(
+        models.TaskMessage.task_id == task_id,
+    ).order_by(models.TaskMessage.created_at.asc()).all()
+
+    return [
+        {
+            "id": m.id,
+            "sender": m.sender,
+            "type": m.type,
+            "content": m.content,
+            "created_at": m.created_at,
+        }
+        for m in messages
+    ]
+
+
+@router.post("/{task_id}/message")
+def send_text(task_id: int, body: TextMessage, db: Session = Depends(get_db), runner=Depends(get_current_runner)):
+    task = db.query(models.Task).filter(
+        models.Task.id == task_id,
+        models.Task.runner_id == runner.id,
+        models.Task.status == "em_execucao",
+    ).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Tarefa não encontrada ou não em execução")
+
+    db.add(models.TaskMessage(task_id=task_id, sender="parceiro", type="text", content=body.content))
+    db.commit()
+    send_message(wa_phone(task.resident.phone), body.content)
+    return {"status": "ok"}
+
+
+@router.post("/{task_id}/message/media")
+async def send_media(task_id: int, file: UploadFile = File(...), db: Session = Depends(get_db), runner=Depends(get_current_runner)):
+    task = db.query(models.Task).filter(
+        models.Task.id == task_id,
+        models.Task.runner_id == runner.id,
+        models.Task.status == "em_execucao",
+    ).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Tarefa não encontrada ou não em execução")
+
+    file_bytes = await file.read()
+    mime_type = file.content_type or "image/jpeg"
+    media_id = upload_media(file_bytes, mime_type, file.filename or "foto.jpg")
+    if not media_id:
+        raise HTTPException(status_code=502, detail="Erro ao fazer upload da imagem")
+
+    db.add(models.TaskMessage(task_id=task_id, sender="parceiro", type="image", content=media_id))
+    db.commit()
+    send_image(wa_phone(task.resident.phone), media_id)
+    return {"status": "ok", "media_id": media_id}
+
+
+@router.get("/media/{media_id}")
+def proxy_media(media_id: str, token: str = Query(...)):
+    payload = decode_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Token inválido")
+
+    url, mime_type = get_media_download_url(media_id)
+    if not url:
+        raise HTTPException(status_code=404, detail="Mídia não encontrada")
+
+    data = download_media_bytes(url)
+    if not data:
+        raise HTTPException(status_code=502, detail="Erro ao baixar mídia")
+
+    return Response(content=data, media_type=mime_type or "image/jpeg")
 
 
 @router.post("/{task_id}/cancel")
