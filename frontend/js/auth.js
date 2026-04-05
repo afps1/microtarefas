@@ -1,4 +1,4 @@
-const API = "http://localhost:8001";
+const API = "https://microtarefas-production.up.railway.app";
 
 const alertEl = document.getElementById("alert");
 const stepEmail = document.getElementById("step-email");
