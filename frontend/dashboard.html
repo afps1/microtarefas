@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vem Aqui — Painel</title>
+  <title>Microtarefas — Painel</title>
   <link rel="stylesheet" href="css/style.css" />
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 </head>
 <body>
 
   <header class="app-header">
-    <h1>Vem Aqui</h1>
+    <h1>Microtarefas</h1>
     <div style="display:flex;align-items:center;gap:12px;">
       <span id="runner-name"></span>
       <button class="btn-logout" onclick="logout()">Sair</button>
@@ -186,8 +186,8 @@
     function notificarNovaTarefa() {
       vibrar();
       apitar();
-      document.title = "(!) Nova tarefa — Vem Aqui";
-      setTimeout(() => { document.title = "Vem Aqui — Painel"; }, 4000);
+      document.title = "(!) Nova tarefa — Microtarefas";
+      setTimeout(() => { document.title = "Microtarefas — Painel"; }, 4000);
     }
 
     async function loadTasks() {

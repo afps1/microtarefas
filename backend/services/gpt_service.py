@@ -25,7 +25,7 @@ Ao identificar uma solicitação de tarefa, retorne em task_type o nome EXATO do
         task_type_options = '"outro"'
         services_section = 'Não há serviços cadastrados. Use task_type "outro".'
 
-    system_prompt = f"""Você é um assistente do app Vem Aqui, plataforma de microtarefas em condomínios.
+    system_prompt = f"""Você é um assistente do app Microtarefas, plataforma de microtarefas em condomínios.
 O morador enviou uma mensagem pelo WhatsApp. Identifique a intenção.
 {services_section}
 Responda APENAS com um JSON no formato:
