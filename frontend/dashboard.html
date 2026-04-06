@@ -409,7 +409,31 @@
     setInterval(loadTasks, POLL_INTERVAL);
 
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/app/sw.js");
+      navigator.serviceWorker.register("/app/sw.js").then(async (reg) => {
+        if (!("PushManager" in window)) return;
+        const permission = await Notification.requestPermission();
+        if (permission !== "granted") return;
+        try {
+          const keyRes = await fetch(`${API}/tasks/push-vapid-key`);
+          const { public_key } = await keyRes.json();
+          if (!public_key) return;
+          const sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: _urlB64ToUint8Array(public_key),
+          });
+          await fetch(`${API}/tasks/me/push-subscription`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify(sub.toJSON()),
+          });
+        } catch (e) { console.warn("Push subscription failed:", e); }
+      });
+    }
+
+    function _urlB64ToUint8Array(b64) {
+      const pad = "=".repeat((4 - b64.length % 4) % 4);
+      const raw = atob((b64 + pad).replace(/-/g, "+").replace(/_/g, "/"));
+      return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
     }
   </script>
 </body>

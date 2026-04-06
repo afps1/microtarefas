@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from services.gpt_service import interpret_message
 from services.whatsapp_service import send_message, get_media_download_url
+from services.push_service import send_push
 import models
 
 router = APIRouter(prefix="/whatsapp", tags=["whatsapp"])
@@ -258,6 +259,23 @@ async def _confirmar_pedido(resident: models.Resident, pending: models.PendingRe
         f"✅ Pedido confirmado: *{label}*{price_info}. Estamos buscando um parceiro disponível. Você será avisado em breve!\n\nSe quiser cancelar, é só responder *cancelar*.",
     )
     db.commit()
+
+    # Notifica parceiros aprovados do condomínio via push
+    subs = (
+        db.query(models.PushSubscription)
+        .join(models.Runner, models.Runner.id == models.PushSubscription.runner_id)
+        .filter(
+            models.Runner.condominium_id == resident.condominium_id,
+            models.Runner.status == "approved",
+        )
+        .all()
+    )
+    for sub in subs:
+        send_push(
+            {"endpoint": sub.endpoint, "keys": {"p256dh": sub.p256dh, "auth": sub.auth}},
+            title="Nova tarefa!",
+            body=f"{label} — Ap. {resident.apartment}",
+        )
 
 
 def _handle_status(resident: models.Resident, db: Session):

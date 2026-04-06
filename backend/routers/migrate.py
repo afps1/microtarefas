@@ -47,6 +47,15 @@ def run_migration(key: str, db: Session = Depends(get_db)):
             FOREIGN KEY (runner_id) REFERENCES runners(id),
             FOREIGN KEY (resident_id) REFERENCES residents(id)
         )""",
+        """CREATE TABLE IF NOT EXISTS push_subscriptions (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            runner_id INT NOT NULL UNIQUE,
+            endpoint TEXT NOT NULL,
+            p256dh TEXT NOT NULL,
+            auth TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (runner_id) REFERENCES runners(id)
+        )""",
         """CREATE TABLE IF NOT EXISTS task_messages (
             id INT AUTO_INCREMENT PRIMARY KEY,
             task_id INT NOT NULL,
