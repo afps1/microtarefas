@@ -417,6 +417,11 @@
           const keyRes = await fetch(`${API}/tasks/push-vapid-key`);
           const { public_key } = await keyRes.json();
           if (!public_key) return;
+
+          // Cancela subscription antiga (chave pode ter mudado)
+          const existing = await reg.pushManager.getSubscription();
+          if (existing) await existing.unsubscribe();
+
           const sub = await reg.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: _urlB64ToUint8Array(public_key),
