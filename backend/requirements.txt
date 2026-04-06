@@ -9,4 +9,4 @@ bcrypt==4.2.1
 pydantic[email]==2.10.3
 python-multipart==0.0.20
 aiofiles==23.2.1
-pywebpush==2.0.0
+pywebpush==1.14.1

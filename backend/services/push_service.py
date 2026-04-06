@@ -11,8 +11,13 @@ VAPID_CLAIMS = {"sub": "mailto:admin@microtarefas.com"}
 
 
 def send_push(subscription: dict, title: str, body: str):
-    if not VAPID_PRIVATE_KEY or not subscription.get("endpoint"):
+    if not VAPID_PRIVATE_KEY:
+        log.warning("VAPID_PRIVATE_KEY não configurada — push ignorado")
         return
+    if not subscription.get("endpoint"):
+        log.warning("Subscription sem endpoint — push ignorado")
+        return
+    log.warning(f"Enviando push para {subscription['endpoint'][:60]}...")
     try:
         webpush(
             subscription_info=subscription,
@@ -20,7 +25,8 @@ def send_push(subscription: dict, title: str, body: str):
             vapid_private_key=VAPID_PRIVATE_KEY,
             vapid_claims=VAPID_CLAIMS,
         )
+        log.warning("Push enviado com sucesso")
     except WebPushException as e:
-        log.warning(f"Push falhou (subscription expirada?): {e}")
+        log.error(f"WebPushException: {repr(e)}")
     except Exception as e:
-        log.error(f"Erro ao enviar push: {e}")
+        log.error(f"Erro ao enviar push: {repr(e)}")
