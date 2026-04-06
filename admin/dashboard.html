@@ -442,13 +442,12 @@
       if (!file) return;
       const form = new FormData();
       form.append("file", file);
-      const token = localStorage.getItem("token");
       const res = await fetch(`${API}/admin/condominio/runners/${id}/photo`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         body: form,
       });
-      if (res.ok) { alert("Foto salva com sucesso!"); loadRunners(); }
+      if (res.ok) { alert("Foto salva!"); loadRunners(); }
       else { const d = await res.json(); alert(d.detail || "Erro ao salvar foto"); }
     }
 
