@@ -79,6 +79,7 @@
     const runner = JSON.parse(localStorage.getItem("runner") || "null");
 
     if (!token) window.location.href = "login.html";
+    if (navigator.clearAppBadge) navigator.clearAppBadge();
 
     const ratingStr = runner?.rating ? ` · ★ ${runner.rating}` : "";
     document.getElementById("runner-name").textContent = (runner?.name || "") + ratingStr;

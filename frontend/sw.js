@@ -17,6 +17,8 @@ self.addEventListener("push", (e) => {
       vibrate: [200, 100, 200],
       tag: "nova-tarefa",
       renotify: true,
+    }).then(() => {
+      if (navigator.setAppBadge) navigator.setAppBadge();
     })
   );
 });
