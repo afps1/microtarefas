@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query
-from fastapi.responses import Response
+from fastapi.responses import Response, FileResponse
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from datetime import datetime, timezone
@@ -8,6 +8,11 @@ from dependencies import get_current_runner
 from services.whatsapp_service import send_message, send_image, upload_media, get_media_download_url, download_media_bytes
 from services.jwt_service import decode_token
 import models
+import os
+import pathlib
+
+PHOTOS_DIR = pathlib.Path("/data/fotos")
+PHOTOS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def wa_phone(phone: str) -> str:
@@ -136,7 +141,16 @@ def update_task_status(
     msg_fn = NOTIFICACOES.get(body.status)
     if msg_fn:
         try:
-            send_message(wa_phone(task.resident.phone), msg_fn(runner, task, db))
+            phone = wa_phone(task.resident.phone)
+            send_message(phone, msg_fn(runner, task, db))
+            # Ao aceitar: envia foto do parceiro se disponível
+            if body.status == "aceito" and runner.photo_url:
+                photo_path = pathlib.Path(runner.photo_url)
+                if photo_path.exists():
+                    photo_bytes = photo_path.read_bytes()
+                    media_id = upload_media(photo_bytes, "image/jpeg", "parceiro.jpg")
+                    if media_id:
+                        send_image(phone, media_id)
         except Exception as e:
             import logging
             logging.getLogger(__name__).error(f"Erro ao notificar morador: {e}")
@@ -252,6 +266,37 @@ def proxy_media(media_id: str, token: str = Query(...)):
         raise HTTPException(status_code=502, detail="Erro ao baixar mídia")
 
     return Response(content=data, media_type=mime_type or "image/jpeg")
+
+
+@router.post("/me/photo")
+async def upload_photo(file: UploadFile = File(...), db: Session = Depends(get_db), runner=Depends(get_current_runner)):
+    data = await file.read()
+    if len(data) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Foto muito grande (máx 5MB)")
+    path = PHOTOS_DIR / f"{runner.id}.jpg"
+    path.write_bytes(data)
+    runner.photo_url = str(path)
+    db.commit()
+    return {"status": "ok"}
+
+
+@router.get("/me/photo")
+def get_my_photo(db: Session = Depends(get_db), runner=Depends(get_current_runner)):
+    path = PHOTOS_DIR / f"{runner.id}.jpg"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Foto não encontrada")
+    return FileResponse(str(path), media_type="image/jpeg")
+
+
+@router.get("/runner/{runner_id}/photo")
+def get_runner_photo(runner_id: int, token: str = Query(...)):
+    payload = decode_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Token inválido")
+    path = PHOTOS_DIR / f"{runner_id}.jpg"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Foto não encontrada")
+    return FileResponse(str(path), media_type="image/jpeg")
 
 
 @router.post("/{task_id}/cancel")

@@ -76,6 +76,10 @@ def verify_otp(body: VerifyOtpBody, db: Session = Depends(get_db)):
     runner = db.query(models.Runner).filter(models.Runner.email == body.email).first()
     token = create_token(runner.id, "runner")
 
+    from sqlalchemy import func
+    avg = db.query(func.avg(models.Rating.score)).filter(models.Rating.runner_id == runner.id).scalar()
+    rating = round(float(avg), 1) if avg else None
+
     return {
         "access_token": token,
         "token_type": "bearer",
@@ -83,5 +87,7 @@ def verify_otp(body: VerifyOtpBody, db: Session = Depends(get_db)):
             "id": runner.id,
             "name": runner.name,
             "email": runner.email,
+            "rating": rating,
+            "has_photo": bool(runner.photo_url),
         },
     }
