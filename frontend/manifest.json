@@ -1,0 +1,23 @@
+{
+  "name": "Microtarefas",
+  "short_name": "Microtarefas",
+  "description": "Painel do parceiro Microtarefas",
+  "start_url": "/app/dashboard.html",
+  "display": "standalone",
+  "background_color": "#f9fafb",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/app/icons/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/app/icons/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
