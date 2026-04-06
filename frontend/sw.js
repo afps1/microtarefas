@@ -12,8 +12,8 @@ self.addEventListener("push", (e) => {
   e.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
-      icon: "/app/icons/icon-192.svg",
-      badge: "/app/icons/icon-192.svg",
+      icon: "/app/icons/icon-192.png",
+      badge: "/app/icons/icon-192.png",
       vibrate: [200, 100, 200],
       tag: "nova-tarefa",
       renotify: true,
