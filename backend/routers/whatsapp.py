@@ -83,7 +83,7 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
     log.warning(f"[WEBHOOK] resident={resident}")
 
     if not resident:
-        send_message(raw_phone, "Olá! Seu número não está cadastrado. Acesse o link para se cadastrar.")
+        send_message(raw_phone, "Olá! Seu número não está cadastrado no sistema. Fale com o síndico do seu condomínio para ter acesso ao Microtarefas. 😊")
         return {"status": "unregistered"}
 
     text_lower = text.lower().strip() if text else ""
