@@ -88,6 +88,5 @@ def verify_otp(body: VerifyOtpBody, db: Session = Depends(get_db)):
             "name": runner.name,
             "email": runner.email,
             "rating": rating,
-            "has_photo": bool(runner.photo_url),
         },
     }

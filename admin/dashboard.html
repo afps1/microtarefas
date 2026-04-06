@@ -392,6 +392,10 @@
             ${r.status !== "approved" ? `<button class="btn-sm btn-approve" onclick="setRunnerStatus(${r.id},'approved')">Aprovar</button>` : ""}
             ${r.status !== "blocked" ? `<button class="btn-sm btn-block" onclick="setRunnerStatus(${r.id},'blocked')">Bloquear</button>` : ""}
             <button class="btn-sm" style="background:#e0f2fe;color:#0369a1;" onclick="editRunner(${r.id},'${r.name}','${r.phone}','${r.email}','${r.pix_key||''}')">Editar</button>
+            <label class="btn-sm" style="background:#f0fdf4;color:#166534;cursor:pointer;margin:0;">
+              ${r.has_photo ? "Trocar foto" : "📷 Foto"}
+              <input type="file" accept="image/*" style="display:none;" onchange="uploadRunnerPhoto(${r.id}, this)" />
+            </label>
             <button class="btn-sm btn-block" onclick="deleteRunner(${r.id})">Remover</button>
           </td>
         </tr>`).join("");
@@ -431,6 +435,21 @@
       if (!confirm("Remover este parceiro?")) return;
       await apiFetch(`/admin/condominio/runners/${id}`, { method: "DELETE" });
       loadRunners();
+    }
+
+    async function uploadRunnerPhoto(id, input) {
+      const file = input.files[0];
+      if (!file) return;
+      const form = new FormData();
+      form.append("file", file);
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API}/admin/condominio/runners/${id}/photo`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: form,
+      });
+      if (res.ok) { alert("Foto salva com sucesso!"); loadRunners(); }
+      else { const d = await res.json(); alert(d.detail || "Erro ao salvar foto"); }
     }
 
     function renderResidents() {

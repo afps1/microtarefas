@@ -1,10 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 from database import get_db
 from dependencies import get_admin_condominio
 import models
+import pathlib
+
+PHOTOS_DIR = pathlib.Path("/data/fotos")
+PHOTOS_DIR.mkdir(parents=True, exist_ok=True)
 
 router = APIRouter(prefix="/admin/condominio", tags=["admin-condominio"])
 
@@ -130,8 +135,54 @@ def list_runners(db: Session = Depends(get_db), admin=Depends(get_admin_condomin
             "pix_key": r.pix_key,
             "status": r.status,
             "rating": round(float(avg), 1) if avg else None,
+            "has_photo": bool(r.photo_url and pathlib.Path(r.photo_url).exists()),
         })
     return result
+
+
+@router.post("/runners/{runner_id}/photo", status_code=status.HTTP_200_OK)
+async def upload_runner_photo(
+    runner_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    admin=Depends(get_admin_condominio),
+):
+    condo_id = _condo_id(admin)
+    runner = db.query(models.Runner).filter(
+        models.Runner.id == runner_id,
+        models.Runner.condominium_id == condo_id,
+    ).first()
+    if not runner:
+        raise HTTPException(status_code=404, detail="Parceiro não encontrado")
+
+    data = await file.read()
+    if len(data) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Foto muito grande (máx 5MB)")
+
+    path = PHOTOS_DIR / f"{runner_id}.jpg"
+    path.write_bytes(data)
+    runner.photo_url = str(path)
+    db.commit()
+    return {"status": "ok"}
+
+
+@router.get("/runners/{runner_id}/photo")
+def get_runner_photo(
+    runner_id: int,
+    db: Session = Depends(get_db),
+    admin=Depends(get_admin_condominio),
+):
+    condo_id = _condo_id(admin)
+    runner = db.query(models.Runner).filter(
+        models.Runner.id == runner_id,
+        models.Runner.condominium_id == condo_id,
+    ).first()
+    if not runner or not runner.photo_url:
+        raise HTTPException(status_code=404, detail="Foto não encontrada")
+    path = pathlib.Path(runner.photo_url)
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Foto não encontrada")
+    return FileResponse(str(path), media_type="image/jpeg")
 
 
 @router.patch("/runners/{runner_id}/status")

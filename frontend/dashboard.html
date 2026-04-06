@@ -25,13 +25,6 @@
   </header>
 
   <main class="app-body">
-    <div id="photo-banner" style="display:none;background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#1e40af;">
-      <strong>Adicione sua foto de perfil</strong> — ela será enviada ao morador quando você aceitar uma tarefa.
-      <div style="margin-top:8px;display:flex;align-items:center;gap:10px;">
-        <input type="file" id="photo-input" accept="image/*" capture="user" style="font-size:13px;flex:1;" />
-        <button onclick="uploadPhoto()" class="btn btn-primary" style="width:auto;padding:8px 14px;font-size:13px;">Salvar</button>
-      </div>
-    </div>
     <div class="section-title">Tarefas disponíveis</div>
     <div id="tasks-list"></div>
 
@@ -91,28 +84,6 @@
     const ratingStr = runner?.rating ? ` · ★ ${runner.rating}` : "";
     document.getElementById("runner-name").textContent = (runner?.name || "") + ratingStr;
 
-    if (runner && !runner.has_photo) {
-      document.getElementById("photo-banner").style.display = "block";
-    }
-
-    async function uploadPhoto() {
-      const file = document.getElementById("photo-input").files[0];
-      if (!file) return alert("Selecione uma foto.");
-      const form = new FormData();
-      form.append("file", file);
-      const res = await fetch(`${API}/tasks/me/photo`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: form,
-      });
-      if (res.ok) {
-        const updated = { ...runner, has_photo: true };
-        localStorage.setItem("runner", JSON.stringify(updated));
-        document.getElementById("photo-banner").style.display = "none";
-      } else {
-        alert("Erro ao enviar foto.");
-      }
-    }
 
     function logout() {
       localStorage.clear();
