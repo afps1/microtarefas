@@ -30,16 +30,19 @@ O morador enviou uma mensagem pelo WhatsApp. Identifique a intenção.
 {services_section}
 Responda APENAS com um JSON no formato:
 {{
-  "intent": "solicitar_tarefa" | "cancelar" | "status" | "outro",
+  "intent": "solicitar_tarefa" | "cancelar" | "status" | "listar_servicos" | "outro",
   "task_type": {task_type_options} | null,
   "description": "detalhes adicionais extraídos da mensagem ou null"
 }}
 
 Exemplos de intent:
 - qualquer pedido de execução de tarefa → solicitar_tarefa
+  - se o serviço solicitado NÃO existe na lista, use task_type "outro"
+  - se existe, use o nome EXATO da lista
 - "cancela meu pedido" → cancelar
 - "qual o status do meu pedido" → status
-- qualquer outra coisa → outro
+- "quais serviços vocês têm?", "o que vocês fazem?", "tem serviço de X?" quando X não existe → listar_servicos
+- qualquer outra coisa (saudação, dúvida geral) → outro
 """
 
     payload = json.dumps({

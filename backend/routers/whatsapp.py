@@ -161,21 +161,19 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
     intent = result.get("intent")
 
     if intent == "solicitar_tarefa":
-        _handle_solicitar(resident, result, db)
+        task_type = result.get("task_type")
+        if task_type == "outro":
+            _handle_servico_indisponivel(resident, services, db)
+        else:
+            _handle_solicitar(resident, result, db)
+    elif intent == "listar_servicos":
+        _handle_listar_servicos(resident, services, db)
     elif intent == "status":
         _handle_status(resident, db)
     elif intent == "cancelar":
         _handle_cancelar(resident, db)
     else:
-        services = db.query(models.ServiceType).filter(
-            models.ServiceType.condominium_id == resident.condominium_id,
-            models.ServiceType.active == True,
-        ).all()
-        if services:
-            menu = "\n".join([f"• {s.name} — R$ {s.price / 100:.2f}".replace(".", ",") for s in services])
-        else:
-            menu = "• Levar lixo\n• Buscar encomenda\n• Compra no mercadinho"
-        send_message(wa_phone(resident.phone), f"Não entendi. Você pode pedir:\n{menu}")
+        _handle_outro(resident, services, db)
 
     return {"status": "ok"}
 
@@ -307,6 +305,36 @@ def _handle_cancelar(resident: models.Resident, db: Session):
     task.updated_at = datetime.now(timezone.utc)
     db.commit()
     send_message(wa_phone(resident.phone), "Pedido cancelado com sucesso.")
+
+
+def _menu_servicos(services) -> str:
+    if services:
+        return "\n".join([f"• {s.name} — R$ {s.price / 100:.2f}".replace(".", ",") for s in services])
+    return "• Nenhum serviço disponível no momento."
+
+
+def _handle_listar_servicos(resident: models.Resident, services, db: Session):
+    menu = _menu_servicos(services)
+    send_message(
+        wa_phone(resident.phone),
+        f"Estes são os serviços disponíveis no seu condomínio:\n\n{menu}\n\nÉ só pedir!",
+    )
+
+
+def _handle_servico_indisponivel(resident: models.Resident, services, db: Session):
+    menu = _menu_servicos(services)
+    send_message(
+        wa_phone(resident.phone),
+        f"Esse serviço não está disponível aqui. Mas você pode solicitar:\n\n{menu}",
+    )
+
+
+def _handle_outro(resident: models.Resident, services, db: Session):
+    menu = _menu_servicos(services)
+    send_message(
+        wa_phone(resident.phone),
+        f"Olá! Posso ajudar a solicitar serviços no seu condomínio:\n\n{menu}\n\nÉ só me dizer o que precisa!",
+    )
 
 
 def _handle_avaliacao(resident: models.Resident, score: int, db) -> bool:
