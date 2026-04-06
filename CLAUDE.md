@@ -1,10 +1,10 @@
-SISTEMA DE MICROTAREFAS HIPERLOCAIS (SHORT-MILE) — VEM AQUI
+SISTEMA DE MICROTAREFAS HIPERLOCAIS (SHORT-MILE) — MICROTAREFAS
 
 1. VISÃO GERAL
 
 Plataforma para execução de microtarefas dentro de condomínios, conectando moradores (demanda) e parceiros (execução), com uso de WhatsApp como interface principal e webapps leves para operação.
 
-Nome do produto: Vem Aqui
+Nome do produto: Microtarefas
 Repositório: github.com/afps1/microtarefas
 Deploy: https://microtarefas-production.up.railway.app
 
@@ -30,7 +30,7 @@ Características:
 
 - Executor da tarefa = PARCEIRO (nunca "runner" — evitar termos em inglês)
 - Solicitante = morador
-- Produto = Vem Aqui
+- Produto = Microtarefas
 
 ---
 
