@@ -29,7 +29,7 @@
     if (!token || !admin) { window.location.href = "login.html"; }
 
     // Exibe nome, role e condomínio no rodapé da sidebar
-    const roleLabel = admin.role === "geral" ? "Admin Geral" : "Admin Condomínio";
+    const roleLabel = admin.role === "geral" ? "Admin Geral" : "Admin Cliente";
     const condoLine = admin.condominium_name ? `<div style="font-weight:600;color:#cbd5e1;margin-bottom:2px;">${admin.condominium_name}</div>` : "";
     document.getElementById("admin-info").innerHTML = `${condoLine}<div>${admin.name}</div><div>${roleLabel}</div>`;
 
@@ -41,8 +41,8 @@
     // ── Navegação por role ──
 
     const menuGeral = [
-      { section: "condominiums", label: "Condomínios" },
-      { section: "condo-admins", label: "Admins de Condomínio" },
+      { section: "condominiums", label: "Clientes" },
+      { section: "condo-admins", label: "Admins de Cliente" },
     ];
 
     const menuCondominio = [
@@ -92,11 +92,11 @@
     function renderCondominiums() {
       document.getElementById("main-content").innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
-          <div class="page-title" style="margin:0">Condomínios</div>
+          <div class="page-title" style="margin:0">Clientes</div>
           <button class="btn btn-primary" style="width:auto;padding:10px 20px;" onclick="showCondoForm()">+ Novo</button>
         </div>
         <div id="condo-form" style="display:none;" class="card" style="padding:20px;margin-bottom:20px;">
-          <div class="card-header">Novo Condomínio</div>
+          <div class="card-header">Novo Cliente</div>
           <div style="padding:20px;">
             <div class="form-group"><label>Nome</label><input type="text" id="condo-name" /></div>
             <div class="form-group"><label>Endereço</label><input type="text" id="condo-addr" /></div>
@@ -115,7 +115,7 @@
       if (!res) return;
       const data = await res.json();
       const tbody = document.getElementById("condo-tbody");
-      if (!data.length) { tbody.innerHTML = `<tr class="empty-row"><td colspan="6">Nenhum condomínio.</td></tr>`; return; }
+      if (!data.length) { tbody.innerHTML = `<tr class="empty-row"><td colspan="6">Nenhum cliente.</td></tr>`; return; }
       tbody.innerHTML = data.map(c => `
         <tr>
           <td>${c.name}</td><td>${c.address || "—"}</td>
@@ -146,7 +146,7 @@
     function renderCondoAdmins() {
       document.getElementById("main-content").innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
-          <div class="page-title" style="margin:0">Admins de Condomínio</div>
+          <div class="page-title" style="margin:0">Admins de Cliente</div>
           <button class="btn btn-primary" style="width:auto;padding:10px 20px;" onclick="showAdminForm()">+ Novo</button>
         </div>
         <div id="admin-form" style="display:none;" class="card" style="margin-bottom:20px;">
@@ -155,14 +155,14 @@
             <div class="form-group"><label>Nome</label><input type="text" id="a-name" /></div>
             <div class="form-group"><label>E-mail</label><input type="email" id="a-email" /></div>
             <div class="form-group"><label>Senha</label><input type="password" id="a-pass" /></div>
-            <div class="form-group"><label>Condomínio</label>
+            <div class="form-group"><label>Cliente</label>
               <select id="a-condo" style="width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:7px;font-size:14px;"></select>
             </div>
           </div>
           <div style="padding:0 20px 20px;"><button class="btn btn-primary" onclick="createAdminCondo()" style="max-width:200px;">Salvar</button></div>
         </div>
         <div class="card">
-          <table><thead><tr><th>Nome</th><th>E-mail</th><th>Condomínio</th><th>Ativo</th><th></th></tr></thead>
+          <table><thead><tr><th>Nome</th><th>E-mail</th><th>Cliente</th><th>Ativo</th><th></th></tr></thead>
           <tbody id="admins-tbody"></tbody></table>
         </div>`;
       loadCondoAdmins();
@@ -315,7 +315,7 @@
       loadServices();
     }
 
-    // ── Seções Admin Condomínio ──
+    // ── Seções Admin Cliente ──
 
     function renderStats() {
       document.getElementById("main-content").innerHTML = `
