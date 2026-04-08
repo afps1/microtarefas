@@ -38,4 +38,11 @@ def health():
 @app.get("/")
 def landing():
     from fastapi.responses import FileResponse
-    return FileResponse(os.path.join(BASE_DIR, "landing", "index.html"))
+    # No container: /landing/index.html — em dev: BASE_DIR/landing/index.html
+    for candidate in [
+        os.path.join(BASE_DIR, "landing", "index.html"),
+        "/landing/index.html",
+    ]:
+        if os.path.exists(candidate):
+            return FileResponse(candidate)
+    return {"status": "ok", "app": "Postino API"}
