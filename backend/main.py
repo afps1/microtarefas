@@ -35,6 +35,10 @@ app.mount("/app", StaticFiles(directory=os.path.join(BASE_DIR, "frontend"), html
 def health():
     return {"status": "ok"}
 
+@app.get("/config")
+def config():
+    return {"whatsapp_number": os.getenv("WHATSAPP_NUMBER", "")}
+
 @app.get("/")
 def landing():
     from fastapi.responses import FileResponse

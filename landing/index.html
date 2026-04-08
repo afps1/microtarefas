@@ -214,6 +214,16 @@
     </div>
   </section>
 
+  <section style="background:#2563eb;padding:48px 24px;text-align:center;">
+    <p style="color:#bfdbfe;font-size:14px;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Como pedir</p>
+    <h2 style="color:white;font-size:26px;font-weight:800;margin-bottom:16px;">Adicione nosso número no WhatsApp</h2>
+    <p style="color:#dbeafe;font-size:16px;margin-bottom:28px;max-width:480px;margin-left:auto;margin-right:auto;line-height:1.6;">Adicione o número <strong id="wa-number" style="color:white;">...</strong> no seu WhatsApp e solicite uma tarefa com uma simples mensagem.</p>
+    <a id="wa-link" href="#" target="_blank"
+      style="display:inline-block;background:white;color:#2563eb;font-weight:700;font-size:15px;padding:14px 28px;border-radius:8px;text-decoration:none;">
+      Abrir no WhatsApp
+    </a>
+  </section>
+
   <section class="how">
     <h2>Como funciona</h2>
     <div class="steps">
@@ -236,5 +246,13 @@
     <p>Postino é uma solução <a href="mailto:andre@afeltec.com.br">Afeltec</a> · <a href="mailto:andre@afeltec.com.br">Fale conosco</a></p>
   </footer>
 
+  <script>
+    fetch("/config").then(r => r.json()).then(d => {
+      if (!d.whatsapp_number) return;
+      const num = d.whatsapp_number.replace(/\D/g, "");
+      document.getElementById("wa-number").textContent = d.whatsapp_number;
+      document.getElementById("wa-link").href = `https://wa.me/${num}`;
+    });
+  </script>
 </body>
 </html>
