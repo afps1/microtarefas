@@ -49,7 +49,7 @@
       { section: "stats", label: "Visão geral" },
       { section: "services", label: "Serviços e preços" },
       { section: "runners", label: "Parceiros" },
-      { section: "residents", label: "Moradores" },
+      { section: "residents", label: "Solicitantes" },
       { section: "tasks", label: "Tarefas" },
     ];
 
@@ -104,7 +104,7 @@
           </div>
         </div>
         <div class="card">
-          <table><thead><tr><th>Nome</th><th>Endereço</th><th>Moradores</th><th>Parceiros</th><th>Ativo</th><th></th></tr></thead>
+          <table><thead><tr><th>Nome</th><th>Endereço</th><th>Solicitantes</th><th>Parceiros</th><th>Ativo</th><th></th></tr></thead>
           <tbody id="condo-tbody"></tbody></table>
         </div>`;
       loadCondominiums();
@@ -331,7 +331,7 @@
       document.getElementById("stats").innerHTML = `
         <div class="stat-card"><div class="value">${d.total_tasks_today}</div><div class="label">Tarefas hoje</div></div>
         <div class="stat-card"><div class="value">${d.active_runners}</div><div class="label">Parceiros ativos</div></div>
-        <div class="stat-card"><div class="value">${d.residents}</div><div class="label">Moradores</div></div>
+        <div class="stat-card"><div class="value">${d.residents}</div><div class="label">Solicitantes</div></div>
         <div class="stat-card"><div class="value">${d.pending_runners}</div><div class="label">Aprovações pendentes</div></div>`;
     }
 
@@ -454,11 +454,11 @@
     function renderResidents() {
       document.getElementById("main-content").innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
-          <div class="page-title" style="margin:0">Moradores</div>
+          <div class="page-title" style="margin:0">Solicitantes</div>
           <button class="btn btn-primary" style="width:auto;padding:10px 20px;" onclick="showResidentForm()">+ Novo</button>
         </div>
         <div id="resident-form" style="display:none;" class="card" style="margin-bottom:20px;">
-          <div class="card-header">Novo Morador</div>
+          <div class="card-header">Novo Solicitante</div>
           <div style="padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
             <div class="form-group"><label>Nome</label><input type="text" id="res-name" /></div>
             <div class="form-group"><label>Telefone (com DDD)</label><input type="text" id="res-phone" inputmode="numeric" /></div>
@@ -498,7 +498,7 @@
       if (!res) return;
       const data = await res.json();
       const tbody = document.getElementById("residents-tbody");
-      if (!data.length) { tbody.innerHTML = `<tr class="empty-row"><td colspan="6">Nenhum morador.</td></tr>`; return; }
+      if (!data.length) { tbody.innerHTML = `<tr class="empty-row"><td colspan="6">Nenhum solicitante.</td></tr>`; return; }
       tbody.innerHTML = data.map(r => `
         <tr id="resident-row-${r.id}">
           <td>${r.name}</td><td>${r.phone}</td><td>${r.apartment}</td>
@@ -535,7 +535,7 @@
     }
 
     async function deleteResident(id) {
-      if (!confirm("Remover este morador?")) return;
+      if (!confirm("Remover este solicitante?")) return;
       await apiFetch(`/admin/condominio/residents/${id}`, { method: "DELETE" });
       loadResidents();
     }
@@ -549,7 +549,7 @@
       document.getElementById("main-content").innerHTML = `
         <div class="page-title">Tarefas</div>
         <div class="card">
-          <table><thead><tr><th>Tipo</th><th>Morador</th><th>Parceiro</th><th>Status</th><th>Nota</th><th>Data</th></tr></thead>
+          <table><thead><tr><th>Tipo</th><th>Solicitante</th><th>Parceiro</th><th>Status</th><th>Nota</th><th>Data</th></tr></thead>
           <tbody id="tasks-tbody"></tbody></table>
         </div>`;
       loadTasks();
