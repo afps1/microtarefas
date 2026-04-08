@@ -7,7 +7,7 @@ from routers import auth_runner, auth_admin, admin_geral, admin_condominio, task
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Microtarefas API", version="0.1.0")
+app = FastAPI(title="Postino API", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -33,4 +33,4 @@ app.mount("/app", StaticFiles(directory=os.path.join(BASE_DIR, "frontend"), html
 
 @app.get("/")
 def root():
-    return {"status": "ok", "app": "Microtarefas API"}
+    return {"status": "ok", "app": "Postino API"}

@@ -1,7 +1,7 @@
 {
-  "name": "Microtarefas",
-  "short_name": "Microtarefas",
-  "description": "Painel do parceiro Microtarefas",
+  "name": "Postino",
+  "short_name": "Postino",
+  "description": "Painel do parceiro Postino",
   "start_url": "/app/dashboard.html",
   "display": "standalone",
   "background_color": "#f9fafb",

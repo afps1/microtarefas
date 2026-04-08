@@ -85,8 +85,8 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
 
     if not resident:
         contact_email = os.getenv("CONTACT_EMAIL", "")
-        contato = f"\n\nCaso tenha interesse em conhecer o Microtarefas, entre em contato com {contact_email}" if contact_email else ""
-        send_message(raw_phone, f"Olá! Seu número não está cadastrado no sistema. Entre em contato com o responsável pelo seu local para ter acesso ao Microtarefas. 😊{contato}")
+        contato = f"\n\nCaso tenha interesse em conhecer o Postino, entre em contato com {contact_email}" if contact_email else ""
+        send_message(raw_phone, f"Olá! Seu número não está cadastrado no sistema. Entre em contato com o responsável pelo seu local para ter acesso ao Postino. 😊{contato}")
         return {"status": "unregistered"}
 
     text_lower = text.lower().strip() if text else ""
