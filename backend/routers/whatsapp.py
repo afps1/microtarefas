@@ -84,7 +84,22 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
     log.warning(f"[WEBHOOK] resident={resident}")
 
     if not resident:
-        send_message(raw_phone, "Olá! Seu número não está cadastrado no sistema. Entre em contato com o responsável pelo seu local para ter acesso ao Microtarefas. 😊")
+        # Tenta encontrar o admin do condomínio pelo número (mesmo inativo)
+        any_resident = db.query(models.Resident).filter(models.Resident.phone == phone).first()
+        admin_contact = None
+        if any_resident:
+            admin_contact = db.query(models.AdminUser).filter(
+                models.AdminUser.condominium_id == any_resident.condominium_id,
+                models.AdminUser.role == "condominio",
+                models.AdminUser.active == True,
+            ).first()
+
+        if admin_contact:
+            msg = f"Olá! Seu número não está cadastrado. Entre em contato com *{admin_contact.name}* pelo e-mail {admin_contact.email} para ter acesso ao Microtarefas. 😊"
+        else:
+            msg = "Olá! Seu número não está cadastrado no sistema. Entre em contato com o responsável pelo seu local para ter acesso ao Microtarefas. 😊"
+
+        send_message(raw_phone, msg)
         return {"status": "unregistered"}
 
     text_lower = text.lower().strip() if text else ""
