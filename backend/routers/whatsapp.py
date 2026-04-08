@@ -84,22 +84,7 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
     log.warning(f"[WEBHOOK] resident={resident}")
 
     if not resident:
-        # Tenta encontrar o admin do condomínio pelo número (mesmo inativo)
-        any_resident = db.query(models.Resident).filter(models.Resident.phone == phone).first()
-        admin_contact = None
-        if any_resident:
-            admin_contact = db.query(models.AdminUser).filter(
-                models.AdminUser.condominium_id == any_resident.condominium_id,
-                models.AdminUser.role == "condominio",
-                models.AdminUser.active == True,
-            ).first()
-
-        if admin_contact:
-            msg = f"Olá! Seu número não está cadastrado. Entre em contato com *{admin_contact.name}* pelo e-mail {admin_contact.email} para ter acesso ao Microtarefas. 😊"
-        else:
-            msg = "Olá! Seu número não está cadastrado no sistema. Entre em contato com o responsável pelo seu local para ter acesso ao Microtarefas. 😊"
-
-        send_message(raw_phone, msg)
+        send_message(raw_phone, "Olá! Seu número não está cadastrado no sistema. Entre em contato com o responsável pelo seu local para ter acesso ao Microtarefas. 😊")
         return {"status": "unregistered"}
 
     text_lower = text.lower().strip() if text else ""
@@ -356,9 +341,15 @@ def _handle_listar_servicos(resident: models.Resident, services, db: Session):
 
 def _handle_servico_indisponivel(resident: models.Resident, services, db: Session):
     menu = _menu_servicos(services)
+    admin_contact = db.query(models.AdminUser).filter(
+        models.AdminUser.condominium_id == resident.condominium_id,
+        models.AdminUser.role == "condominio",
+        models.AdminUser.active == True,
+    ).first()
+    contato = f"\n\nPara solicitar novos serviços, entre em contato com *{admin_contact.name}* pelo e-mail {admin_contact.email}." if admin_contact else ""
     send_message(
         wa_phone(resident.phone),
-        f"Esse serviço não está disponível aqui. Mas você pode solicitar:\n\n{menu}",
+        f"Esse serviço não está disponível. Mas você pode solicitar:\n\n{menu}{contato}",
     )
 
 
