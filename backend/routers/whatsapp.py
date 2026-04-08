@@ -274,7 +274,7 @@ async def _confirmar_pedido(resident: models.Resident, pending: models.PendingRe
         send_push(
             {"endpoint": sub.endpoint, "keys": {"p256dh": sub.p256dh, "auth": sub.auth}},
             title="Nova tarefa!",
-            body=f"{label} — Ap. {resident.apartment}",
+            body=f"{label} — {resident.apartment}",
         )
 
 
