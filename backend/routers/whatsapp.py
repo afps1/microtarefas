@@ -84,7 +84,9 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
     log.warning(f"[WEBHOOK] resident={resident}")
 
     if not resident:
-        send_message(raw_phone, "Olá! Seu número não está cadastrado no sistema. Entre em contato com o responsável pelo seu local para ter acesso ao Microtarefas. 😊")
+        contact_email = os.getenv("CONTACT_EMAIL", "")
+        contato = f"\n\nCaso tenha interesse em conhecer o Microtarefas, entre em contato com {contact_email}" if contact_email else ""
+        send_message(raw_phone, f"Olá! Seu número não está cadastrado no sistema. Entre em contato com o responsável pelo seu local para ter acesso ao Microtarefas. 😊{contato}")
         return {"status": "unregistered"}
 
     text_lower = text.lower().strip() if text else ""
