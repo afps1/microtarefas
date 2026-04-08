@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Postino — Serviços hiperlocais</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f8fafc;
+      color: #1e293b;
+    }
+
+    header {
+      background: #2563eb;
+      padding: 20px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    header h1 {
+      color: white;
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    header a {
+      color: white;
+      text-decoration: none;
+      font-size: 14px;
+      opacity: 0.85;
+    }
+
+    .hero {
+      text-align: center;
+      padding: 80px 24px 60px;
+    }
+
+    .hero h2 {
+      font-size: 42px;
+      font-weight: 800;
+      line-height: 1.15;
+      color: #0f172a;
+      margin-bottom: 20px;
+    }
+
+    .hero h2 span {
+      color: #2563eb;
+    }
+
+    .hero p {
+      font-size: 18px;
+      color: #64748b;
+      max-width: 540px;
+      margin: 0 auto 40px;
+      line-height: 1.6;
+    }
+
+    .hero-btns {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      color: white;
+      padding: 14px 28px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 15px;
+    }
+
+    .btn-outline {
+      background: white;
+      color: #2563eb;
+      padding: 14px 28px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 15px;
+      border: 2px solid #2563eb;
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 24px;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
+    }
+
+    .feature {
+      background: white;
+      border-radius: 12px;
+      padding: 28px 24px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .feature-icon {
+      font-size: 32px;
+      margin-bottom: 14px;
+    }
+
+    .feature h3 {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #0f172a;
+    }
+
+    .feature p {
+      font-size: 14px;
+      color: #64748b;
+      line-height: 1.6;
+    }
+
+    .how {
+      background: #eff6ff;
+      padding: 60px 24px;
+      text-align: center;
+    }
+
+    .how h2 {
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 40px;
+      color: #0f172a;
+    }
+
+    .steps {
+      display: flex;
+      gap: 32px;
+      justify-content: center;
+      flex-wrap: wrap;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .step {
+      flex: 1;
+      min-width: 180px;
+      max-width: 220px;
+    }
+
+    .step-num {
+      width: 40px;
+      height: 40px;
+      background: #2563eb;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 16px;
+      margin: 0 auto 12px;
+    }
+
+    .step p {
+      font-size: 14px;
+      color: #334155;
+      line-height: 1.6;
+    }
+
+    footer {
+      text-align: center;
+      padding: 32px 24px;
+      font-size: 13px;
+      color: #94a3b8;
+    }
+
+    footer a { color: #2563eb; text-decoration: none; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Postino</h1>
+    <a href="/app/login.html">Área do parceiro →</a>
+  </header>
+
+  <section class="hero">
+    <h2>Pequenas tarefas,<br><span>grande comodidade</span></h2>
+    <p>Postino conecta você a parceiros do seu local para resolver tarefas do dia a dia com rapidez e simplicidade — tudo pelo WhatsApp.</p>
+    <div class="hero-btns">
+      <a href="/app/login.html" class="btn-primary">Sou parceiro</a>
+      <a href="/admin/login.html" class="btn-outline">Área admin</a>
+    </div>
+  </section>
+
+  <section class="features">
+    <div class="feature">
+      <div class="feature-icon">🗑️</div>
+      <h3>Levar lixo</h3>
+      <p>Sem precisar descer. Um parceiro cuida disso por você em minutos.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">📦</div>
+      <h3>Buscar encomenda</h3>
+      <p>Sua encomenda chegou na portaria? Um parceiro traz até a sua porta.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🛒</div>
+      <h3>Compras rápidas</h3>
+      <p>Precisa de algo no mercadinho? Peça e receba sem sair de casa.</p>
+    </div>
+  </section>
+
+  <section class="how">
+    <h2>Como funciona</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <p>Você manda uma mensagem no <strong>WhatsApp</strong> pedindo o serviço</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <p>Um parceiro aceita e está a caminho em instantes</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <p>Pague diretamente via <strong>Pix</strong> — simples e sem intermediários</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>Postino é uma solução <a href="mailto:andre@afeltec.com.br">Afeltec</a> · <a href="mailto:andre@afeltec.com.br">Fale conosco</a></p>
+  </footer>
+
+</body>
+</html>
