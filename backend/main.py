@@ -30,4 +30,12 @@ app.include_router(migrate.router)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 app.mount("/admin", StaticFiles(directory=os.path.join(BASE_DIR, "admin"), html=True), name="admin")
 app.mount("/app", StaticFiles(directory=os.path.join(BASE_DIR, "frontend"), html=True), name="frontend")
-app.mount("/", StaticFiles(directory=os.path.join(BASE_DIR, "landing"), html=True), name="landing")
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+@app.get("/")
+def landing():
+    from fastapi.responses import FileResponse
+    return FileResponse(os.path.join(BASE_DIR, "landing", "index.html"))
