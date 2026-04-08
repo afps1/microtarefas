@@ -32,7 +32,7 @@
       <div class="chat-fullscreen">
         <div class="chat-topbar">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-          Chat com o morador
+          Chat com o solicitante
         </div>
         <div id="chat-actions" class="chat-actions"></div>
         <div class="chat-messages" id="chat-msgs"></div>
@@ -118,7 +118,7 @@
       el.innerHTML = tasks.map(t => `
         <div class="task-card">
           <div class="task-type">${t.type}</div>
-          <div class="task-meta">Ap. ${t.resident_apartment} · ${formatDate(t.created_at)}</div>
+          <div class="task-meta">Local: ${t.resident_apartment} · ${formatDate(t.created_at)}</div>
           <span class="task-status status-${t.status}">${statusLabel[t.status] || t.status}</span>
           ${t.description ? `<div class="task-observation">${svgPin}<span>${t.description}</span></div>` : ""}
           ${taskActions(t, hasActive)}
@@ -299,7 +299,7 @@
         : `<span>${m.content}</span>`;
       return `<div class="chat-msg ${mine ? "chat-mine" : "chat-theirs"}">
         ${bubble}
-        <div class="chat-time">${mine ? "" : "Morador · "}${time}</div>
+        <div class="chat-time">${mine ? "" : "Solicitante · "}${time}</div>
       </div>`;
     }
 
@@ -336,7 +336,7 @@
     }
 
     async function cancelTask(taskId) {
-      if (!confirm("Tem certeza que deseja cancelar este serviço? O morador será avisado e a tarefa voltará para a fila.")) return;
+      if (!confirm("Tem certeza que deseja cancelar este serviço? O solicitante será avisado e a tarefa voltará para a fila.")) return;
       try {
         const res = await fetch(`${API}/tasks/${taskId}/cancel`, {
           method: "POST",
