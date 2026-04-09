@@ -269,6 +269,7 @@ async def _confirmar_pedido(resident: models.Resident, pending: models.PendingRe
         .filter(
             models.Runner.condominium_id == resident.condominium_id,
             models.Runner.status == "approved",
+            models.Runner.available == True,
         )
         .all()
     )

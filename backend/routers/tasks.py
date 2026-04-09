@@ -279,6 +279,17 @@ class PushSubscriptionBody(BaseModel):
     keys: dict
 
 
+class AvailableUpdate(BaseModel):
+    available: bool
+
+
+@router.patch("/me/available")
+def set_available(body: AvailableUpdate, db: Session = Depends(get_db), runner=Depends(get_current_runner)):
+    runner.available = body.available
+    db.commit()
+    return {"available": runner.available}
+
+
 @router.post("/me/push-subscription")
 def save_push_subscription(body: PushSubscriptionBody, db: Session = Depends(get_db), runner=Depends(get_current_runner)):
     existing = db.query(models.PushSubscription).filter(models.PushSubscription.runner_id == runner.id).first()

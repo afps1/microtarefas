@@ -44,6 +44,7 @@ class Runner(Base):
     pix_key = Column(String(200))
     photo_url = Column(String(500))
     status = Column(Enum("pending", "approved", "blocked"), default="pending")
+    available = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     condominium = relationship("Condominium", back_populates="runners")

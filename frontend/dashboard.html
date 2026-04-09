@@ -20,6 +20,7 @@
     <h1>Postino</h1>
     <div style="display:flex;align-items:center;gap:12px;">
       <span id="runner-name"></span>
+      <button id="btn-available" onclick="toggleAvailable()" style="border:none;border-radius:20px;padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer;transition:background .2s,color .2s;">Disponível</button>
       <button class="btn-logout" onclick="logout()">Sair</button>
     </div>
   </header>
@@ -83,6 +84,39 @@
 
     const ratingStr = runner?.rating ? ` · ★ ${runner.rating}` : "";
     document.getElementById("runner-name").textContent = (runner?.name || "") + ratingStr;
+
+    let isAvailable = runner?.available !== false;
+    function updateAvailableBtn() {
+      const btn = document.getElementById("btn-available");
+      if (isAvailable) {
+        btn.textContent = "Disponível";
+        btn.style.background = "#dcfce7";
+        btn.style.color = "#16a34a";
+      } else {
+        btn.textContent = "Indisponível";
+        btn.style.background = "#f1f5f9";
+        btn.style.color = "#94a3b8";
+      }
+    }
+    updateAvailableBtn();
+
+    async function toggleAvailable() {
+      isAvailable = !isAvailable;
+      updateAvailableBtn();
+      try {
+        await fetch(`${API}/tasks/me/available`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ available: isAvailable }),
+        });
+        const r = JSON.parse(localStorage.getItem("runner") || "{}");
+        r.available = isAvailable;
+        localStorage.setItem("runner", JSON.stringify(r));
+      } catch (e) {
+        isAvailable = !isAvailable;
+        updateAvailableBtn();
+      }
+    }
 
 
     function logout() {

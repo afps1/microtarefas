@@ -88,5 +88,6 @@ def verify_otp(body: VerifyOtpBody, db: Session = Depends(get_db)):
             "name": runner.name,
             "email": runner.email,
             "rating": rating,
+            "available": runner.available if runner.available is not None else True,
         },
     }
