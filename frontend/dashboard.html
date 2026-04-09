@@ -16,13 +16,13 @@
 </head>
 <body>
 
-  <header class="app-header">
-    <div class="app-header-row">
-      <h1>Postino</h1>
+  <header style="background:white;border-bottom:1px solid #e5e7eb;padding:10px 20px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;z-index:200;">
+    <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+      <h1 style="font-size:20px;font-weight:800;color:#2563eb;margin:0;">Postino</h1>
       <button class="btn-logout" onclick="logout()">Sair</button>
     </div>
-    <div class="app-header-row">
-      <span id="runner-name"></span>
+    <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+      <span id="runner-name" style="font-size:13px;color:#6b7280;"></span>
       <button id="btn-available" onclick="toggleAvailable()" style="border:none;border-radius:20px;padding:5px 14px;font-size:13px;font-weight:600;cursor:pointer;transition:background .2s,color .2s;">Disponível</button>
     </div>
   </header>
