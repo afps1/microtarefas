@@ -17,11 +17,13 @@
 <body>
 
   <header class="app-header">
-    <h1>Postino</h1>
-    <div style="display:flex;align-items:center;gap:12px;">
-      <span id="runner-name"></span>
-      <button id="btn-available" onclick="toggleAvailable()" style="border:none;border-radius:20px;padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer;transition:background .2s,color .2s;">Disponível</button>
+    <div class="app-header-row">
+      <h1>Postino</h1>
       <button class="btn-logout" onclick="logout()">Sair</button>
+    </div>
+    <div class="app-header-row">
+      <span id="runner-name"></span>
+      <button id="btn-available" onclick="toggleAvailable()" style="border:none;border-radius:20px;padding:5px 14px;font-size:13px;font-weight:600;cursor:pointer;transition:background .2s,color .2s;">Disponível</button>
     </div>
   </header>
 
