@@ -35,6 +35,14 @@ app.mount("/app", StaticFiles(directory=os.path.join(BASE_DIR, "frontend"), html
 def health():
     return {"status": "ok"}
 
+@app.get("/video/demo.mp4")
+def video_demo():
+    from fastapi.responses import FileResponse
+    path = "/data/postino.mp4"
+    if os.path.exists(path):
+        return FileResponse(path, media_type="video/mp4")
+    return {"error": "not found"}
+
 @app.get("/config")
 def config():
     return {"whatsapp_number": os.getenv("WHATSAPP_NUMBER", "")}
