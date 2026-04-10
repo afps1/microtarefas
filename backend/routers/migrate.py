@@ -1,7 +1,7 @@
 """
 Endpoint temporário de migração — remover após uso.
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, UploadFile, File
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from database import get_db
@@ -109,6 +109,16 @@ def run_migration(key: str, db: Session = Depends(get_db)):
         results.append({"sql": "ALTER TABLE tasks status enum", "status": str(e)})
 
     return {"results": results}
+
+
+@router.post("/upload-video")
+async def upload_video(key: str, file: UploadFile = File(...)):
+    if key != os.getenv("SETUP_KEY"):
+        return {"error": "unauthorized"}
+    data = await file.read()
+    with open("/data/postino.mp4", "wb") as f:
+        f.write(data)
+    return {"status": "ok", "size": len(data)}
 
 
 @router.post("/clean-tasks")
