@@ -65,6 +65,15 @@ def run_migration(key: str, db: Session = Depends(get_db)):
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (task_id) REFERENCES tasks(id)
         )""",
+        """CREATE TABLE IF NOT EXISTS runner_services (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            runner_id INT NOT NULL,
+            service_type_id INT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_runner_service (runner_id, service_type_id),
+            FOREIGN KEY (runner_id) REFERENCES runners(id),
+            FOREIGN KEY (service_type_id) REFERENCES service_types(id)
+        )""",
     ]
 
     # Adiciona colunas apenas se não existirem

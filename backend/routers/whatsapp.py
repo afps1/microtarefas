@@ -263,8 +263,8 @@ async def _confirmar_pedido(resident: models.Resident, pending: models.PendingRe
     )
     db.commit()
 
-    # Notifica parceiros aprovados do condomínio via push
-    subs = (
+    # Notifica parceiros aprovados que aceitam este serviço
+    subs_query = (
         db.query(models.PushSubscription)
         .join(models.Runner, models.Runner.id == models.PushSubscription.runner_id)
         .filter(
@@ -272,8 +272,14 @@ async def _confirmar_pedido(resident: models.Resident, pending: models.PendingRe
             models.Runner.status == "approved",
             models.Runner.available == True,
         )
-        .all()
     )
+    if task.service_type_id:
+        subs_query = subs_query.join(
+            models.RunnerService,
+            (models.RunnerService.runner_id == models.Runner.id) &
+            (models.RunnerService.service_type_id == task.service_type_id),
+        )
+    subs = subs_query.all()
     for sub in subs:
         send_push(
             {"endpoint": sub.endpoint, "keys": {"p256dh": sub.p256dh, "auth": sub.auth}},

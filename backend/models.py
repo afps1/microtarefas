@@ -183,3 +183,15 @@ class OtpCode(Base):
     expires_at = Column(DateTime, nullable=False)
     used_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class RunnerService(Base):
+    __tablename__ = "runner_services"
+
+    id = Column(Integer, primary_key=True)
+    runner_id = Column(Integer, ForeignKey("runners.id"), nullable=False)
+    service_type_id = Column(Integer, ForeignKey("service_types.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    runner = relationship("Runner", foreign_keys=[runner_id])
+    service_type = relationship("ServiceType", foreign_keys=[service_type_id])
