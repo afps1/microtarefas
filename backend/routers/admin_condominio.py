@@ -382,3 +382,44 @@ def stats(db: Session = Depends(get_db), admin=Depends(get_admin_condominio)):
         "residents": residents,
         "pending_runners": pending_runners,
     }
+
+
+@router.get("/stats/tasks-by-service")
+def stats_tasks_by_service(db: Session = Depends(get_db), admin=Depends(get_admin_condominio)):
+    from datetime import date, timedelta
+    from sqlalchemy import func
+    condo_id = _condo_id(admin)
+    since = date.today() - timedelta(days=30)
+    rows = (
+        db.query(models.Task.type, func.count(models.Task.id))
+        .filter(
+            models.Task.condominium_id == condo_id,
+            models.Task.status == "recebido",
+            models.Task.created_at >= since,
+        )
+        .group_by(models.Task.type)
+        .order_by(func.count(models.Task.id).desc())
+        .all()
+    )
+    return [{"label": r[0], "value": r[1]} for r in rows]
+
+
+@router.get("/stats/tasks-by-runner")
+def stats_tasks_by_runner(db: Session = Depends(get_db), admin=Depends(get_admin_condominio)):
+    from datetime import date, timedelta
+    from sqlalchemy import func
+    condo_id = _condo_id(admin)
+    since = date.today() - timedelta(days=30)
+    rows = (
+        db.query(models.Runner.name, func.count(models.Task.id))
+        .join(models.Task, models.Task.runner_id == models.Runner.id)
+        .filter(
+            models.Task.condominium_id == condo_id,
+            models.Task.status == "recebido",
+            models.Task.created_at >= since,
+        )
+        .group_by(models.Runner.name)
+        .order_by(func.count(models.Task.id).desc())
+        .all()
+    )
+    return [{"label": r[0], "value": r[1]} for r in rows]
