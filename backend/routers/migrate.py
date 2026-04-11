@@ -111,6 +111,18 @@ def run_migration(key: str, db: Session = Depends(get_db)):
     return {"results": results}
 
 
+@router.post("/test-email")
+def test_email(key: str, email: str):
+    if key != os.getenv("SETUP_KEY"):
+        return {"error": "unauthorized"}
+    from services.email_service import send_otp_email
+    try:
+        send_otp_email(email, "123456")
+        return {"status": "ok", "resend_key_set": bool(os.getenv("RESEND_API_KEY"))}
+    except Exception as e:
+        return {"status": "error", "detail": str(e)}
+
+
 @router.post("/upload-video")
 async def upload_video(key: str, file: UploadFile = File(...)):
     if key != os.getenv("SETUP_KEY"):
