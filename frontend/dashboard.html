@@ -305,6 +305,7 @@
     let chatInterval = null;
 
     function startChatPolling(task, forceUpdate = false) {
+      document.getElementById("services-section").style.display = "none";
       document.getElementById("chat-container").style.display = "block";
       const actionBtn = task.status === "aceito"
         ? `<button class="btn btn-primary" onclick="updateTask(${task.id}, 'em_execucao')">Iniciar execução</button>`
@@ -323,6 +324,7 @@
     }
 
     function stopChatPolling() {
+      document.getElementById("services-section").style.display = "";
       document.getElementById("chat-container").style.display = "none";
       if (chatInterval) clearInterval(chatInterval);
       chatInterval = null;
