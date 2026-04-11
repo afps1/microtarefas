@@ -13,7 +13,7 @@ self.addEventListener("push", (e) => {
     self.registration.showNotification(data.title, {
       body: data.body,
       icon: "/app/icons/icon-192.png",
-      badge: "/app/icons/icon-192.png",
+      badge: "/app/icons/badge-72.png",
       vibrate: [200, 100, 200],
       tag: "nova-tarefa",
       renotify: true,
