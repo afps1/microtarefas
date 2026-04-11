@@ -229,12 +229,12 @@
           <div style="padding:20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
             <div class="form-group"><label>Nome</label><input type="text" id="sv-name" placeholder="Ex: Coleta de lixo" /></div>
             <div class="form-group"><label>Descrição (opcional)</label><input type="text" id="sv-desc" /></div>
-            <div class="form-group"><label>Preço (R$)</label><input type="number" id="sv-price" placeholder="5.00" step="0.01" min="0" /></div>
+            <div class="form-group"><label>Preço sugerido (R$)</label><input type="number" id="sv-price" placeholder="0 = a combinar" step="0.01" min="0" /></div>
           </div>
           <div style="padding:0 20px 20px;"><button class="btn btn-primary" onclick="createService()" style="max-width:200px;">Salvar</button></div>
         </div>
         <div class="card">
-          <table><thead><tr><th>Serviço</th><th>Descrição</th><th>Preço</th><th>Ativo</th><th></th></tr></thead>
+          <table><thead><tr><th>Serviço</th><th>Descrição</th><th>Preço sugerido</th><th>Ativo</th><th></th></tr></thead>
           <tbody id="services-tbody"></tbody></table>
         </div>`;
       loadServices();

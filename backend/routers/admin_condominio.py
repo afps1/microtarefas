@@ -63,7 +63,7 @@ def list_services(db: Session = Depends(get_db), admin=Depends(get_admin_condomi
             "name": s.name,
             "description": s.description,
             "price": s.price,
-            "price_fmt": f"R$ {s.price / 100:.2f}".replace(".", ","),
+            "price_fmt": f"R$ {s.price / 100:.2f}".replace(".", ",") if s.price else "a combinar",
             "active": s.active,
         }
         for s in services
