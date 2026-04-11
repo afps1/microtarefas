@@ -226,15 +226,14 @@
         </div>
         <div id="service-form" style="display:none;" class="card" style="margin-bottom:20px;">
           <div class="card-header">Novo serviço</div>
-          <div style="padding:20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+          <div style="padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
             <div class="form-group"><label>Nome</label><input type="text" id="sv-name" placeholder="Ex: Coleta de lixo" /></div>
-            <div class="form-group"><label>Descrição (opcional)</label><input type="text" id="sv-desc" /></div>
-            <div class="form-group"><label>Preço sugerido (R$)</label><input type="number" id="sv-price" placeholder="0 = a combinar" step="0.01" min="0" /></div>
+            <div class="form-group"><label>Preço sugerido (R$) — use 0 para "a combinar"</label><input type="number" id="sv-price" placeholder="0 = a combinar" step="0.01" min="0" /></div>
           </div>
           <div style="padding:0 20px 20px;"><button class="btn btn-primary" onclick="createService()" style="max-width:200px;">Salvar</button></div>
         </div>
         <div class="card">
-          <table><thead><tr><th>Serviço</th><th>Descrição</th><th>Preço sugerido</th><th>Ativo</th><th></th></tr></thead>
+          <table><thead><tr><th>Serviço</th><th>Preço sugerido</th><th>Ativo</th><th></th></tr></thead>
           <tbody id="services-tbody"></tbody></table>
         </div>`;
       loadServices();
@@ -254,11 +253,10 @@
       tbody.innerHTML = data.map(s => `
         <tr id="service-row-${s.id}">
           <td>${s.name}</td>
-          <td>${s.description || "—"}</td>
           <td><strong>${s.price_fmt}</strong></td>
           <td>${s.active ? "✅" : "❌"}</td>
           <td style="display:flex;gap:6px;">
-            <button class="btn-sm" style="background:#e0f2fe;color:#0369a1;" onclick="editService(${s.id},'${s.name}','${s.description||''}',${s.price})">Editar</button>
+            <button class="btn-sm" style="background:#e0f2fe;color:#0369a1;" onclick="editService(${s.id},'${s.name}',${s.price})">Editar</button>
             <button class="btn-sm ${s.active ? "btn-block" : "btn-approve"}" onclick="toggleService(${s.id},${!s.active})">${s.active ? "Desativar" : "Ativar"}</button>
             <button class="btn-sm btn-block" onclick="deleteService(${s.id})">Remover</button>
           </td>
@@ -270,7 +268,6 @@
       if (isNaN(priceReais) || priceReais < 0) return alert("Preço inválido");
       const body = {
         name: document.getElementById("sv-name").value.trim(),
-        description: document.getElementById("sv-desc").value.trim() || null,
         price: Math.round(priceReais * 100),
       };
       if (!body.name) return alert("Nome obrigatório");
@@ -279,12 +276,11 @@
       else { const d = await res.json(); alert(d.detail || "Erro"); }
     }
 
-    function editService(id, name, desc, price) {
+    function editService(id, name, price) {
       const row = document.getElementById(`service-row-${id}`);
       const priceReais = (price / 100).toFixed(2);
       row.innerHTML = `
         <td><input type="text" value="${name}" id="esv-name-${id}" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:5px;" /></td>
-        <td><input type="text" value="${desc}" id="esv-desc-${id}" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:5px;" /></td>
         <td><input type="number" value="${priceReais}" id="esv-price-${id}" step="0.01" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:5px;" /></td>
         <td colspan="2" style="display:flex;gap:6px;">
           <button class="btn-sm btn-approve" onclick="saveService(${id})">Salvar</button>
