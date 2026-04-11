@@ -138,15 +138,16 @@ def update_task_status(
         if result.rowcount == 0:
             raise HTTPException(status_code=409, detail="Tarefa já foi aceita por outro parceiro")
         db.refresh(task)
-        return {"id": task.id, "status": task.status}
+        # Continua para enviar notificação WhatsApp abaixo
 
-    # Garante que só quem aceitou pode avançar
-    if task.runner_id and task.runner_id != runner.id:
-        raise HTTPException(status_code=403, detail="Esta tarefa pertence a outro parceiro")
+    else:
+        # Garante que só quem aceitou pode avançar
+        if task.runner_id and task.runner_id != runner.id:
+            raise HTTPException(status_code=403, detail="Esta tarefa pertence a outro parceiro")
 
-    task.status = body.status
-    task.updated_at = datetime.now(timezone.utc)
-    db.commit()
+        task.status = body.status
+        task.updated_at = datetime.now(timezone.utc)
+        db.commit()
 
     # Notifica morador via WhatsApp
     NOTIFICACOES = {
