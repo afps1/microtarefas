@@ -176,9 +176,6 @@ input:focus {
   display: flex;
   align-items: center;
   gap: 8px;
-  position: sticky;
-  top: 0;
-  z-index: 11;
 }
 
 .chat-actions {
@@ -186,9 +183,6 @@ input:focus {
   padding: 10px 16px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
-  position: sticky;
-  top: 0;
-  z-index: 10;
 }
 
 .chat-messages {
