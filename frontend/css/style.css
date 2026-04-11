@@ -20,7 +20,10 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background: var(--bg);
   color: var(--text);
-  min-height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /* ── Auth ── */
@@ -386,9 +389,13 @@ input:focus {
 }
 
 .app-body {
+  flex: 1;
+  overflow-y: auto;
   padding: 20px;
   max-width: 500px;
+  width: 100%;
   margin: 0 auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .section-title {
