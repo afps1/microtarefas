@@ -3,13 +3,12 @@ Rota de setup inicial — criar primeiro admin geral.
 Só funciona se não existir nenhum admin geral cadastrado.
 Remover após uso.
 """
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 from database import get_db
 import models
 import bcrypt
-import os
 
 router = APIRouter(prefix="/setup", tags=["setup"])
 
@@ -20,17 +19,6 @@ class SetupBody(BaseModel):
     password: str
     setup_key: str
 
-
-@router.post("/upload-video")
-async def upload_video(key: str = Query(...), file: UploadFile = File(...)):
-    expected_key = os.getenv("SETUP_KEY")
-    if not expected_key or key != expected_key:
-        raise HTTPException(status_code=403, detail="key inválida")
-    dest = f"/data/{file.filename}"
-    content = await file.read()
-    with open(dest, "wb") as f:
-        f.write(content)
-    return {"saved": dest, "size": len(content)}
 
 
 @router.post("/admin-geral")
