@@ -156,7 +156,7 @@ input:focus {
 /* ── Chat ── */
 .chat-fullscreen {
   position: fixed;
-  top: 134px; /* 90px header + 44px "Meus serviços" button */
+  top: 90px; /* ajustado via JS ao abrir/fechar */
   left: 0;
   right: 0;
   bottom: 0;
@@ -176,6 +176,9 @@ input:focus {
   display: flex;
   align-items: center;
   gap: 8px;
+  position: sticky;
+  top: 0;
+  z-index: 11;
 }
 
 .chat-actions {
@@ -183,6 +186,9 @@ input:focus {
   padding: 10px 16px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .chat-messages {
