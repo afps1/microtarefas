@@ -20,6 +20,19 @@ def wa_phone(phone: str) -> str:
     return phone if phone.startswith("55") else f"55{phone}"
 
 
+def _obs_question(service_name: str) -> str:
+    name = service_name.lower()
+    if "carona" in name:
+        return "Qual o destino da carona? Ou tem alguma outra observação? Responda com o texto ou *não* para pular."
+    if "farmácia" in name or "farmacia" in name:
+        return "Qual o medicamento ou item que precisa? Ou tem alguma observação? Responda com o texto ou *não* para pular."
+    if "cachorro" in name or "pet" in name or "passeio" in name:
+        return "Alguma instrução sobre o pet? Ou alguma observação? Responda com o texto ou *não* para pular."
+    if "lâmpada" in name or "lampada" in name or "serviço" in name or "instalação" in name or "instalacao" in name:
+        return "Qual o serviço que precisa? Ou tem alguma observação? Responda com o texto ou *não* para pular."
+    return "Quer incluir alguma observação para o parceiro? Responda com o texto ou *não* para pular."
+
+
 TASK_LABELS = {
     "lixo": "Levar lixo",
     "encomenda": "Buscar encomenda",
@@ -107,10 +120,9 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
         elif text_lower in ("sim", "s", "confirmar", "confirma", "ok"):
             pending.awaiting_observation = True
             db.commit()
-            send_message(
-                wa_phone(resident.phone),
-                "Quer incluir alguma observação para o parceiro? Responda com o texto ou *não* para pular.",
-            )
+            service_name = (pending.service_type.name if pending.service_type else pending.task_type or "").lower()
+            obs_question = _obs_question(service_name)
+            send_message(wa_phone(resident.phone), obs_question)
         elif text_lower in ("não", "nao", "n", "cancelar", "cancela"):
             db.delete(pending)
             db.commit()
