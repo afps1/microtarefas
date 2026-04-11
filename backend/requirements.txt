@@ -10,3 +10,4 @@ pydantic[email]==2.10.3
 python-multipart==0.0.20
 aiofiles==23.2.1
 pywebpush==1.14.1
+resend==2.10.0

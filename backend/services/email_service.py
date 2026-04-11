@@ -13,10 +13,10 @@ def send_otp_email(email: str, code: str):
         return
 
     try:
-        import urllib.request
-        import json
+        import resend
+        resend.api_key = RESEND_API_KEY
 
-        payload = json.dumps({
+        resend.Emails.send({
             "from": "Postino <noreply@postino.com.br>",
             "to": [email],
             "subject": "Seu código de acesso — Postino",
@@ -30,18 +30,9 @@ def send_otp_email(email: str, code: str):
                   <p style="color:#94a3b8;font-size:13px;margin-top:24px;">O código expira em 10 minutos. Se não foi você, ignore este e-mail.</p>
                 </div>
             """,
-        }).encode("utf-8")
-
-        req = urllib.request.Request(
-            "https://api.resend.com/emails",
-            data=payload,
-            headers={
-                "Authorization": f"Bearer {RESEND_API_KEY}",
-                "Content-Type": "application/json",
-            },
-        )
-        with urllib.request.urlopen(req) as resp:
-            logger.info(f"[EMAIL] OTP enviado para {email} — status {resp.status}")
+        })
+        logger.info(f"[EMAIL] OTP enviado para {email}")
 
     except Exception as e:
         logger.error(f"[EMAIL] Erro ao enviar para {email}: {e}")
+        raise
