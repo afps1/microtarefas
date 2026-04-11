@@ -23,16 +23,8 @@ def wa_phone(phone: str) -> str:
 def _msg_concluido(runner, task, db):
     # Busca preço: snapshot da tarefa ou serviço atual
     price = task.price
-    if not price and task.service_type_id:
+    if price is None and task.service_type_id:
         service = db.query(models.ServiceType).filter(models.ServiceType.id == task.service_type_id).first()
-        if service:
-            price = service.price
-    if not price:
-        # Tenta pelo tipo da tarefa
-        service = db.query(models.ServiceType).filter(
-            models.ServiceType.condominium_id == task.condominium_id,
-            models.ServiceType.active == True,
-        ).first()
         if service:
             price = service.price
 
