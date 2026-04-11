@@ -65,11 +65,12 @@ def my_tasks(db: Session = Depends(get_db), runner=Depends(get_current_runner)):
             models.Task.status.in_(["solicitado", "aceito", "em_execucao", "concluido"]),
         )
         .filter(
-            # Próprias tarefas em andamento sempre visíveis; solicitadas só se o serviço está ativo
+            # Próprias tarefas em andamento sempre visíveis
+            # Solicitadas: só se disponível e serviço ativo
             (models.Task.runner_id == runner.id) |
             (
                 (models.Task.runner_id == None) &
-                (models.Task.service_type_id.in_(active_service_ids) if active_service_ids else sql_false())
+                (models.Task.service_type_id.in_(active_service_ids) if (active_service_ids and runner.available) else sql_false())
             )
         )
         .order_by(models.Task.created_at.desc())
