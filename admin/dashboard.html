@@ -291,11 +291,12 @@
 
     async function saveService(id) {
       const priceReais = parseFloat(document.getElementById(`esv-price-${id}`).value);
+      if (isNaN(priceReais) || priceReais < 0) return alert("Preço inválido");
       const body = {
         name: document.getElementById(`esv-name-${id}`).value.trim(),
-        description: document.getElementById(`esv-desc-${id}`).value.trim() || null,
         price: Math.round(priceReais * 100),
       };
+      if (!body.name) return alert("Nome obrigatório");
       const res = await apiFetch(`/admin/condominio/services/${id}`, { method: "PATCH", body: JSON.stringify(body) });
       if (res?.ok) loadServices();
       else { const d = await res.json(); alert(d.detail || "Erro"); }
