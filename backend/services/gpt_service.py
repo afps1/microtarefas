@@ -75,3 +75,33 @@ Exemplos de intent:
             return json.loads(content)
     except Exception as e:
         return {"intent": "outro", "task_type": None, "description": None, "error": str(e)}
+
+
+def generate_obs_question(service_name: str) -> str:
+    prompt = f"""Você é o assistente do Postino, app de microtarefas em condomínios.
+O solicitante acabou de confirmar o serviço: "{service_name}".
+Gere uma pergunta curta e natural pedindo uma informação específica sobre esse serviço, finalizando sempre com "ou alguma observação? Responda com o texto ou *não* para pular."
+Exemplos:
+- Carona entre vizinhos → "Qual o destino da carona? Ou tem alguma observação? Responda com o texto ou *não* para pular."
+- Comprar em farmácia → "Qual o medicamento ou item que precisa? Ou alguma observação? Responda com o texto ou *não* para pular."
+Retorne APENAS a pergunta, sem aspas."""
+
+    payload = json.dumps({
+        "model": MODEL,
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.3,
+        "max_tokens": 80,
+    }).encode()
+
+    req = urllib.request.Request(
+        API_URL,
+        data=payload,
+        headers={"Content-Type": "application/json", "Authorization": f"Bearer {API_KEY}"},
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=10) as res:
+            data = json.loads(res.read())
+            return data["choices"][0]["message"]["content"].strip()
+    except Exception:
+        return "Quer incluir alguma observação para o parceiro? Responda com o texto ou *não* para pular."
