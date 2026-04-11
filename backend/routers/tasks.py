@@ -39,7 +39,8 @@ def _msg_concluido(runner, task, db):
     return (
         f"🎉 Tarefa concluída por *{runner.name}*!\n\n"
         f"{price_str}"
-        f"Chave Pix: *{runner.pix_key or 'não cadastrada'}*"
+        f"Chave Pix: *{runner.pix_key or 'não cadastrada'}*\n\n"
+        f"Você paga direto ao parceiro via Pix."
     )
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
