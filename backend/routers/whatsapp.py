@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Request, Response, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
-from services.gpt_service import interpret_message, generate_obs_question
+from services.gpt_service import interpret_message
 from services.whatsapp_service import send_message, get_media_download_url
 from services.push_service import send_push
 import models
@@ -108,9 +108,10 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
         elif text_lower in ("sim", "s", "confirmar", "confirma", "ok"):
             pending.awaiting_observation = True
             db.commit()
-            service_name = pending.service_type.name if pending.service_type else pending.task_type or ""
-            obs_question = generate_obs_question(service_name)
-            send_message(wa_phone(resident.phone), obs_question)
+            send_message(
+                wa_phone(resident.phone),
+                "Tem alguma observação para o parceiro? Responda com o texto ou *não* para pular.",
+            )
         elif text_lower in ("não", "nao", "n", "cancelar", "cancela"):
             db.delete(pending)
             db.commit()
