@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query
 from fastapi.responses import Response
-from sqlalchemy import false as sql_false
+from sqlalchemy import false as sql_false, update as sql_update
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from datetime import datetime, timezone
@@ -115,10 +115,8 @@ def update_task_status(
             detail=f"Transição inválida: {task.status} → {body.status}",
         )
 
-    # Ao aceitar: reserva a tarefa para este parceiro (transacional)
+    # Ao aceitar: reserva atomicamente via UPDATE WHERE runner_id IS NULL
     if body.status == "aceito":
-        if task.runner_id is not None and task.runner_id != runner.id:
-            raise HTTPException(status_code=409, detail="Tarefa já foi aceita por outro parceiro")
         # Bloqueia aceitar nova tarefa se já tem uma ativa
         active = db.query(models.Task).filter(
             models.Task.runner_id == runner.id,
@@ -126,7 +124,21 @@ def update_task_status(
         ).first()
         if active:
             raise HTTPException(status_code=409, detail="Você já tem uma tarefa em andamento")
-        task.runner_id = runner.id
+
+        result = db.execute(
+            sql_update(models.Task)
+            .where(
+                models.Task.id == task_id,
+                models.Task.runner_id == None,
+                models.Task.status == "solicitado",
+            )
+            .values(runner_id=runner.id, status="aceito", updated_at=datetime.now(timezone.utc))
+        )
+        db.commit()
+        if result.rowcount == 0:
+            raise HTTPException(status_code=409, detail="Tarefa já foi aceita por outro parceiro")
+        db.refresh(task)
+        return {"id": task.id, "status": task.status}
 
     # Garante que só quem aceitou pode avançar
     if task.runner_id and task.runner_id != runner.id:
