@@ -269,8 +269,8 @@
           renderTasks(data);
         }
 
-        const execTask = data.find(t => t.status === "em_execucao" && t.is_mine);
-        if (execTask) startChatPolling(execTask);
+        const execTask = data.find(t => t.is_mine && (t.status === "aceito" || t.status === "em_execucao"));
+        if (execTask) startChatPolling(execTask, hash !== lastTasksHash);
         else stopChatPolling();
 
       } catch {
@@ -304,15 +304,18 @@
     let activeChatTaskId = null;
     let chatInterval = null;
 
-    function startChatPolling(task) {
+    function startChatPolling(task, forceUpdate = false) {
       document.getElementById("chat-container").style.display = "block";
+      const actionBtn = task.status === "aceito"
+        ? `<button class="btn btn-primary" onclick="updateTask(${task.id}, 'em_execucao')">Iniciar execução</button>`
+        : `<button class="btn btn-primary" onclick="updateTask(${task.id}, 'concluido')">Marcar concluído</button>`;
       document.getElementById("chat-actions").innerHTML = `
         <div style="display:flex;gap:10px;${task.description ? 'margin-bottom:8px;' : ''}">
-          <button class="btn btn-primary" onclick="updateTask(${task.id}, 'concluido')">Marcar concluído</button>
+          ${actionBtn}
           <button class="btn btn-cancel" onclick="cancelTask(${task.id})">Cancelar serviço</button>
         </div>
         ${task.description ? `<div class="chat-observation">${svgPin}<span>${task.description}</span></div>` : ''}`;
-      if (activeChatTaskId === task.id) return;
+      if (activeChatTaskId === task.id && !forceUpdate) return;
       activeChatTaskId = task.id;
       if (chatInterval) clearInterval(chatInterval);
       loadMessages();

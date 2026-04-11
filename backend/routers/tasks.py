@@ -145,8 +145,8 @@ def update_task_status(
 
     # Notifica morador via WhatsApp
     NOTIFICACOES = {
-        "aceito": lambda r, t, _db: f"✅ *{r.name}* aceitou sua tarefa e está a caminho!",
-        "em_execucao": lambda r, t, _db: f"🏃 *{r.name}* está executando sua tarefa agora.\n\nSe precisar, pode mandar uma mensagem aqui mesmo — o parceiro receberá em tempo real.",
+        "aceito": lambda r, t, _db: f"✅ *{r.name}* aceitou sua tarefa.\n\nVocê já pode mandar uma mensagem aqui mesmo — o parceiro receberá em tempo real.",
+        "em_execucao": lambda r, t, _db: f"🏃 *{r.name}* iniciou a execução da sua tarefa.",
         "concluido": lambda r, t, _db: _msg_concluido(r, t, _db),
         "recebido": lambda r, t, _db: f"Como você avalia o serviço de *{r.name}*?\n\nResponda com um número de 1 a 5:\n⭐ 1 - Ruim\n⭐⭐ 2 - Regular\n⭐⭐⭐ 3 - Bom\n⭐⭐⭐⭐ 4 - Ótimo\n⭐⭐⭐⭐⭐ 5 - Excelente",
     }
@@ -206,10 +206,10 @@ def send_text(task_id: int, body: TextMessage, db: Session = Depends(get_db), ru
     task = db.query(models.Task).filter(
         models.Task.id == task_id,
         models.Task.runner_id == runner.id,
-        models.Task.status == "em_execucao",
+        models.Task.status.in_(["aceito", "em_execucao"]),
     ).first()
     if not task:
-        raise HTTPException(status_code=404, detail="Tarefa não encontrada ou não em execução")
+        raise HTTPException(status_code=404, detail="Tarefa não encontrada ou não ativa")
 
     db.add(models.TaskMessage(task_id=task_id, sender="parceiro", type="text", content=body.content))
     db.commit()
@@ -222,10 +222,10 @@ async def send_media(task_id: int, file: UploadFile = File(...), db: Session = D
     task = db.query(models.Task).filter(
         models.Task.id == task_id,
         models.Task.runner_id == runner.id,
-        models.Task.status == "em_execucao",
+        models.Task.status.in_(["aceito", "em_execucao"]),
     ).first()
     if not task:
-        raise HTTPException(status_code=404, detail="Tarefa não encontrada ou não em execução")
+        raise HTTPException(status_code=404, detail="Tarefa não encontrada ou não ativa")
 
     file_bytes = await file.read()
     mime_type = file.content_type or "image/jpeg"
@@ -248,10 +248,10 @@ def send_pix_code(task_id: int, body: PixPayload, db: Session = Depends(get_db),
     task = db.query(models.Task).filter(
         models.Task.id == task_id,
         models.Task.runner_id == runner.id,
-        models.Task.status == "em_execucao",
+        models.Task.status.in_(["aceito", "em_execucao"]),
     ).first()
     if not task:
-        raise HTTPException(status_code=404, detail="Tarefa não encontrada ou não em execução")
+        raise HTTPException(status_code=404, detail="Tarefa não encontrada ou não ativa")
 
     msg_text = f"Código Pix:\n{body.payload}"
     db.add(models.TaskMessage(task_id=task_id, sender="parceiro", type="text", content=msg_text))
