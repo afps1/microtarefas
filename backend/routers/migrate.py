@@ -115,10 +115,28 @@ def run_migration(key: str, db: Session = Depends(get_db)):
 def test_email(key: str, email: str):
     if key != os.getenv("SETUP_KEY"):
         return {"error": "unauthorized"}
-    from services.email_service import send_otp_email
+    import urllib.request, json
+    api_key = os.getenv("RESEND_API_KEY", "")
+    if not api_key:
+        return {"error": "RESEND_API_KEY não configurada"}
     try:
-        send_otp_email(email, "123456")
-        return {"status": "ok", "resend_key_set": bool(os.getenv("RESEND_API_KEY"))}
+        payload = json.dumps({
+            "from": "Postino <noreply@postino.com.br>",
+            "to": [email],
+            "subject": "Teste Postino",
+            "html": "<p>Teste de envio — funcionou!</p>",
+        }).encode("utf-8")
+        req = urllib.request.Request(
+            "https://api.resend.com/emails",
+            data=payload,
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+        )
+        with urllib.request.urlopen(req) as resp:
+            body = json.loads(resp.read())
+            return {"status": "ok", "resend_response": body}
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode()
+        return {"status": "error", "http_status": e.code, "detail": error_body}
     except Exception as e:
         return {"status": "error", "detail": str(e)}
 
