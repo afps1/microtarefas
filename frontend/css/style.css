@@ -156,7 +156,7 @@ input:focus {
 /* ── Chat ── */
 .chat-fullscreen {
   position: fixed;
-  top: 90px;
+  top: 134px; /* 90px header + 44px "Meus serviços" button */
   left: 0;
   right: 0;
   bottom: 0;
