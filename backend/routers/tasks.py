@@ -35,7 +35,7 @@ def _msg_concluido(runner, task, db):
         if service:
             price = service.price
 
-    price_str = f"💸 Valor sugerido: *R$ {price / 100:.2f}*\n".replace(".", ",") if price else ""
+    price_str = (f"💸 Valor sugerido: *R$ {price / 100:.2f}*\n".replace(".", ",") if price else "💸 Valor: *a combinar*\n")
     return (
         f"🎉 Tarefa concluída por *{runner.name}*!\n\n"
         f"{price_str}"
