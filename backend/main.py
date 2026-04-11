@@ -50,7 +50,6 @@ def config():
 @app.get("/")
 def landing():
     from fastapi.responses import FileResponse
-    # No container: /landing/index.html — em dev: BASE_DIR/landing/index.html
     for candidate in [
         os.path.join(BASE_DIR, "landing", "index.html"),
         "/landing/index.html",
@@ -58,3 +57,15 @@ def landing():
         if os.path.exists(candidate):
             return FileResponse(candidate)
     return {"status": "ok", "app": "Postino API"}
+
+
+@app.get("/termos")
+def termos():
+    from fastapi.responses import FileResponse
+    for candidate in [
+        os.path.join(BASE_DIR, "landing", "termos.html"),
+        "/landing/termos.html",
+    ]:
+        if os.path.exists(candidate):
+            return FileResponse(candidate)
+    return {"error": "not found"}
