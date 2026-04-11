@@ -118,7 +118,7 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
             send_message(wa_phone(resident.phone), "Pedido cancelado. Quando quiser, é só pedir!")
         else:
             service = pending.service_type
-            price_info = f" — *R$ {service.price / 100:.2f}*".replace(".", ",") if service else ""
+            price_info = f" — preço sugerido *R$ {service.price / 100:.2f}*".replace(".", ",") if service else ""
             label = service.name if service else TASK_LABELS.get(pending.task_type, pending.task_type)
             send_message(
                 wa_phone(resident.phone),
@@ -216,7 +216,7 @@ def _handle_solicitar(resident: models.Resident, gpt_result: dict, db: Session):
         ).first()
 
     label = service.name if service else task_type
-    price_info = f" — *R$ {service.price / 100:.2f}*".replace(".", ",") if service else ""
+    price_info = f" — preço sugerido *R$ {service.price / 100:.2f}*".replace(".", ",") if service else ""
 
     # Salva pedido pendente aguardando confirmação
     existing = db.query(models.PendingRequest).filter(
@@ -256,7 +256,7 @@ async def _confirmar_pedido(resident: models.Resident, pending: models.PendingRe
     db.flush()
 
     label = service.name if service else TASK_LABELS.get(pending.task_type, pending.task_type)
-    price_info = f" — *R$ {service.price / 100:.2f}*".replace(".", ",") if service else ""
+    price_info = f" — preço sugerido *R$ {service.price / 100:.2f}*".replace(".", ",") if service else ""
     send_message(
         wa_phone(resident.phone),
         f"✅ Pedido confirmado: *{label}*{price_info}. Estamos buscando um parceiro disponível. Você será avisado em breve!\n\nSe quiser cancelar, é só responder *cancelar*.",
