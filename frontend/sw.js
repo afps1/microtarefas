@@ -19,6 +19,10 @@ self.addEventListener("push", (e) => {
       renotify: true,
     }).then(() => {
       if (navigator.setAppBadge) navigator.setAppBadge();
+      // Avisa o app aberto para atualizar a lista imediatamente
+      return self.clients.matchAll({ type: "window" }).then(clients => {
+        clients.forEach(c => c.postMessage({ type: "NEW_TASK" }));
+      });
     })
   );
 });

@@ -547,6 +547,10 @@
     setInterval(loadTasks, POLL_INTERVAL);
 
     if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.addEventListener("message", (event) => {
+        if (event.data?.type === "NEW_TASK") loadTasks();
+      });
+
       navigator.serviceWorker.register("/app/sw.js").then(async (reg) => {
         if (!("PushManager" in window)) return;
         const permission = await Notification.requestPermission();
