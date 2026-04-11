@@ -255,6 +255,8 @@
       setTimeout(() => { document.title = "Postino — Painel"; }, 4000);
     }
 
+    let loadErrorCount = 0;
+
     async function loadTasks() {
       try {
         const res = await fetch(`${API}/tasks/my`, {
@@ -262,6 +264,8 @@
         });
         if (res.status === 401) { logout(); return; }
         const data = await res.json();
+
+        loadErrorCount = 0;
 
         const novos = data.filter(t => t.status === "solicitado" && !lastTaskIds.has(t.id));
         if (novos.length > 0 && lastTaskIds.size > 0) notificarNovaTarefa();
@@ -278,8 +282,14 @@
         else stopChatPolling();
 
       } catch {
-        document.getElementById("tasks-list").innerHTML =
-          `<div class="empty-state"><p>Erro ao carregar tarefas.</p></div>`;
+        loadErrorCount++;
+        if (loadErrorCount < 3) {
+          // Tenta novamente em 3s silenciosamente
+          setTimeout(loadTasks, 3000);
+        } else {
+          document.getElementById("tasks-list").innerHTML =
+            `<div class="empty-state"><p>Sem conexão. Tentando reconectar...</p></div>`;
+        }
       }
     }
 
