@@ -43,6 +43,14 @@ def video_demo():
         return FileResponse(path, media_type="video/mp4")
     return {"error": "not found"}
 
+@app.get("/video/demo2.mp4")
+def video_demo2():
+    from fastapi.responses import FileResponse
+    path = "/data/2video.mp4"
+    if os.path.exists(path):
+        return FileResponse(path, media_type="video/mp4")
+    return {"error": "not found"}
+
 @app.get("/config")
 def config():
     return {"whatsapp_number": os.getenv("WHATSAPP_NUMBER", "")}
