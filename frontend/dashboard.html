@@ -19,7 +19,13 @@
   <header style="background:white;border-bottom:1px solid #e5e7eb;padding:10px 20px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;z-index:200;">
     <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
       <h1 style="font-size:20px;font-weight:800;color:#2563eb;margin:0;">Postino</h1>
-      <button class="btn-logout" onclick="logout()">Sair</button>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button onclick="openServicesModal()" title="Meus serviços" style="background:none;border:none;cursor:pointer;color:#6b7280;display:flex;align-items:center;gap:5px;font-size:13px;font-weight:600;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          Serviços
+        </button>
+        <button class="btn-logout" onclick="logout()">Sair</button>
+      </div>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
       <span id="runner-name" style="font-size:13px;color:#6b7280;"></span>
@@ -27,19 +33,17 @@
     </div>
   </header>
 
-  <!-- Meus serviços -->
-  <div id="services-section" style="background:#f8fafc;border-bottom:1px solid #e5e7eb;position:sticky;top:90px;z-index:190;">
-    <button onclick="toggleServicesPanel()" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 20px;background:none;border:none;cursor:pointer;font-size:13px;font-weight:600;color:#374151;">
-      <span style="display:flex;align-items:center;gap:6px;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
-        Meus serviços
-      </span>
-      <span id="services-chevron" style="transition:transform .2s;font-size:11px;">▼</span>
-    </button>
-    <div id="services-panel" style="display:none;padding:0 20px 12px;display:none;">
-      <div id="services-list" style="display:flex;flex-direction:column;gap:8px;">
-        <p style="font-size:13px;color:#9ca3af;margin:0;">Carregando...</p>
+  <!-- Modal Meus serviços -->
+  <div id="services-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;align-items:flex-end;justify-content:center;">
+    <div style="background:white;border-radius:16px 16px 0 0;width:100%;max-width:500px;padding:20px;max-height:80vh;display:flex;flex-direction:column;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <span style="font-size:16px;font-weight:700;color:#111827;">Meus serviços</span>
+        <button onclick="closeServicesModal()" style="background:none;border:none;cursor:pointer;color:#6b7280;display:flex;align-items:center;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
       </div>
+      <p style="font-size:13px;color:#6b7280;margin-bottom:16px;">Ative os serviços que você aceita prestar. Você só receberá chamados dos serviços selecionados.</p>
+      <div id="services-list" style="overflow-y:auto;"></div>
     </div>
   </div>
 
@@ -305,7 +309,6 @@
     let chatInterval = null;
 
     function startChatPolling(task, forceUpdate = false) {
-      document.getElementById("services-section").style.display = "none";
       document.getElementById("tasks-list").style.display = "none";
       document.getElementById("chat-container").style.display = "block";
       const actionBtn = task.status === "aceito"
@@ -325,7 +328,6 @@
     }
 
     function stopChatPolling() {
-      document.getElementById("services-section").style.display = "";
       document.getElementById("tasks-list").style.display = "";
       document.getElementById("chat-container").style.display = "none";
       if (chatInterval) clearInterval(chatInterval);
@@ -467,16 +469,19 @@
 
     // ── Meus serviços ──
 
-    let servicesPanelOpen = false;
-
-    function toggleServicesPanel() {
-      servicesPanelOpen = !servicesPanelOpen;
-      const panel = document.getElementById("services-panel");
-      const chevron = document.getElementById("services-chevron");
-      panel.style.display = servicesPanelOpen ? "block" : "none";
-      chevron.style.transform = servicesPanelOpen ? "rotate(180deg)" : "";
-      if (servicesPanelOpen) loadServices();
+    function openServicesModal() {
+      document.getElementById("services-modal").style.display = "flex";
+      loadServices();
     }
+
+    function closeServicesModal() {
+      document.getElementById("services-modal").style.display = "none";
+    }
+
+    // Fecha modal ao clicar fora
+    document.getElementById("services-modal").addEventListener("click", function(e) {
+      if (e.target === this) closeServicesModal();
+    });
 
     async function loadServices() {
       try {
