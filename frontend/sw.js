@@ -1,4 +1,4 @@
-// Service Worker — network-only + Web Push
+// Service Worker — network-only + Web Push — v2
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
 
