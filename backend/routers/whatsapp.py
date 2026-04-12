@@ -337,7 +337,11 @@ def _handle_cancelar(resident: models.Resident, db: Session):
 
 def _menu_servicos(services) -> str:
     if services:
-        return "\n".join([f"• {s.name} — {'R$ ' + '{:.2f}'.format(s.price / 100).replace('.', ',') if s.price else 'a combinar'}" for s in services])
+        items = []
+        for s in services:
+            price_str = f"R$ {'{:.2f}'.format(s.price / 100).replace('.', ',')}" if s.price else "a combinar"
+            items.append(f"• *{s.name}*\n  Preço sugerido: {price_str}")
+        return "\n\n".join(items)
     return "• Nenhum serviço disponível no momento."
 
 
