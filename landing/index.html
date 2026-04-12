@@ -91,7 +91,7 @@
 
     .features {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      grid-template-columns: repeat(3, 1fr);
       gap: 24px;
       max-width: 1000px;
       margin: 0 auto;
@@ -175,6 +175,9 @@
 
     footer a { color: #365ece; text-decoration: none; }
 
+    @media (max-width: 640px) {
+      .features { grid-template-columns: 1fr; }
+    }
     @media (max-width: 480px) {
       .btn-label { display: none; }
       .btn-outline { padding: 8px 12px !important; }
