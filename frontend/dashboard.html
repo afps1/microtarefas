@@ -203,7 +203,7 @@
           </div>`;
       }
       if (task.status === "concluido") {
-        return `<button class="btn btn-primary" onclick="updateTask(${task.id}, 'recebido')">Recebi o pagamento</button>`;
+        return `<button class="btn btn-primary" onclick="updateTask(${task.id}, 'recebido')">Finalizar tarefa</button>`;
       }
       return "";
     }
