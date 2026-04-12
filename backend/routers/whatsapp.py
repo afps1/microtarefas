@@ -236,7 +236,7 @@ def _handle_solicitar(resident: models.Resident, gpt_result: dict, db: Session):
 
     send_message(
         wa_phone(resident.phone),
-        f"Você quer solicitar: *{label}*{price_info}\n\nConfirma? Responda *sim* ou *não*.",
+        f"Você quer solicitar: *{label}*{price_info}\n\nConfirma? Responda *sim* ou *não*.\n\nSe prosseguir, você aceita os termos e condições em: postino.com.br/termos",
     )
 
 
