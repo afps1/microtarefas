@@ -391,7 +391,7 @@
           <div class="card-header">Novo Parceiro</div>
           <div style="padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
             <div class="form-group"><label>Nome</label><input type="text" id="r-name" /></div>
-            <div class="form-group"><label>WhatsApp (com DDD)</label><input type="text" id="r-phone" inputmode="numeric" /></div>
+            <div class="form-group"><label>WhatsApp (com DDD) <span style="color:#9ca3af;font-weight:400;">(opcional)</span></label><input type="text" id="r-phone" inputmode="numeric" /></div>
             <div class="form-group"><label>E-mail</label><input type="email" id="r-email" /></div>
             <div class="form-group"><label>Chave Pix</label><input type="text" id="r-pix" /></div>
           </div>
@@ -417,7 +417,7 @@
         pix_key: document.getElementById("r-pix").value.trim() || null,
         condominium_id: admin.condominium_id,
       };
-      if (!body.name || !body.phone || !body.email) return alert("Nome, telefone e e-mail são obrigatórios");
+      if (!body.name || !body.email) return alert("Nome e e-mail são obrigatórios");
       const res = await apiFetch("/cadastro/parceiro", { method: "POST", body: JSON.stringify(body) });
       if (res?.ok) { document.getElementById("runner-form").style.display = "none"; loadRunners(); }
       else { const d = await res.json(); alert(d.detail || "Erro ao cadastrar"); }
