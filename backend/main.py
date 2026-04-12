@@ -67,6 +67,17 @@ def landing():
     return {"status": "ok", "app": "Postino API"}
 
 
+@app.get("/favicon.png")
+def favicon():
+    from fastapi.responses import FileResponse
+    for candidate in [
+        os.path.join(BASE_DIR, "landing", "favicon.png"),
+        "/landing/favicon.png",
+    ]:
+        if os.path.exists(candidate):
+            return FileResponse(candidate, media_type="image/png")
+    return {"error": "not found"}
+
 @app.get("/termos")
 def termos():
     from fastapi.responses import FileResponse
