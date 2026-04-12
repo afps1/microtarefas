@@ -203,7 +203,9 @@
           </div>`;
       }
       if (task.status === "concluido") {
-        return `<button class="btn btn-primary" onclick="updateTask(${task.id}, 'recebido')">Finalizar tarefa</button>`;
+        return `
+          <p style="font-size:13px;color:#6b7280;margin-bottom:8px;">Aguarde o pagamento via Pix antes de finalizar.</p>
+          <button class="btn btn-primary" onclick="updateTask(${task.id}, 'recebido')">Finalizar tarefa</button>`;
       }
       return "";
     }
