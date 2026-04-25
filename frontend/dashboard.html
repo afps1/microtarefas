@@ -520,6 +520,9 @@
           el.innerHTML = `<p style="font-size:13px;color:#9ca3af;margin:0;">Nenhum serviço cadastrado.</p>`;
           return;
         }
+        // Abre modal automaticamente se nenhum serviço ativo (primeira vez)
+        const hasActive = services.some(s => s.active);
+        if (!hasActive) openServicesModal();
         el.innerHTML = `
           <table style="width:100%;border-collapse:collapse;background:white;border-radius:8px;overflow:hidden;border:1px solid #e5e7eb;">
             <thead>
@@ -559,6 +562,7 @@
     }
 
     loadTasks();
+    loadServices();
     setInterval(loadTasks, POLL_INTERVAL);
 
     if ("serviceWorker" in navigator) {
