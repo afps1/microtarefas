@@ -361,10 +361,19 @@
         const msgs = await res.json();
         const el = document.getElementById("chat-msgs");
         const atBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 40;
-        el.innerHTML = msgs.length
-          ? msgs.map(m => renderMsg(m)).join("")
-          : `<div class="chat-empty">Nenhuma mensagem ainda.</div>`;
-        if (atBottom) el.scrollTop = el.scrollHeight;
+        const rendered = el.querySelectorAll(".chat-msg").length;
+        if (msgs.length === 0 && rendered === 0) {
+          el.innerHTML = `<div class="chat-empty">Nenhuma mensagem ainda.</div>`;
+        } else if (msgs.length > rendered) {
+          // Remove empty state se existir
+          const empty = el.querySelector(".chat-empty");
+          if (empty) empty.remove();
+          // Adiciona apenas as mensagens novas
+          msgs.slice(rendered).forEach(m => {
+            el.insertAdjacentHTML("beforeend", renderMsg(m));
+          });
+          if (atBottom) el.scrollTop = el.scrollHeight;
+        }
       } catch {}
     }
 
