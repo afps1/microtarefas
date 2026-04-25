@@ -36,12 +36,9 @@
     </div>
   </header>
 
-  <!-- Banner notificações desativadas -->
+  <!-- Banner notificações / instalação -->
   <div id="notif-banner" style="display:none;background:#fef3c7;border-bottom:1px solid #fcd34d;padding:10px 16px;text-align:center;">
-    <span style="font-size:13px;color:#92400e;">
-      Notificações desativadas — você pode perder chamados.
-      <button onclick="pedirPermissaoNotificacao()" style="background:#f59e0b;color:white;border:none;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;margin-left:8px;">Ativar agora</button>
-    </span>
+    <span id="notif-banner-msg" style="font-size:13px;color:#92400e;"></span>
   </div>
 
   <!-- Modal Meus serviços -->
@@ -574,9 +571,28 @@
     setInterval(loadTasks, POLL_INTERVAL);
 
     function checarNotificacoes() {
+      const isPWA = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      const isAndroid = /android/i.test(navigator.userAgent);
+      const banner = document.getElementById("notif-banner");
+      const msg = document.getElementById("notif-banner-msg");
+
+      if (isIOS && !isPWA) {
+        msg.innerHTML = `Para receber notificações, instale o app: abra no <strong>Safari</strong>, toque em compartilhar e <strong>"Adicionar à Tela de Início"</strong>.`;
+        banner.style.display = "block";
+        return;
+      }
+
+      if (isAndroid && !isPWA) {
+        msg.innerHTML = `Para uma melhor experiência, instale o app: toque no menu <strong>⋮</strong> do Chrome e <strong>"Adicionar à tela inicial"</strong>.`;
+        banner.style.display = "block";
+        return;
+      }
+
       if (!("Notification" in window)) return;
       if (Notification.permission !== "granted") {
-        document.getElementById("notif-banner").style.display = "block";
+        msg.innerHTML = `Notificações desativadas — você pode perder chamados. <button onclick="pedirPermissaoNotificacao()" style="background:#f59e0b;color:white;border:none;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;margin-left:8px;">Ativar agora</button>`;
+        banner.style.display = "block";
       }
     }
 
