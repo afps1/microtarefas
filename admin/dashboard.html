@@ -391,14 +391,13 @@
           <div class="card-header">Novo Parceiro</div>
           <div style="padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
             <div class="form-group"><label>Nome <span style="color:#ef4444;">*</span></label><input type="text" id="r-name" /></div>
-            <div class="form-group"><label>WhatsApp (com DDD) <span style="color:#9ca3af;font-weight:400;">(opcional)</span></label><input type="text" id="r-phone" inputmode="numeric" /></div>
-            <div class="form-group"><label>E-mail <span style="color:#ef4444;">*</span></label><input type="email" id="r-email" /></div>
-            <div class="form-group"><label>Chave Pix <span style="color:#ef4444;">*</span></label><input type="text" id="r-pix" /></div>
+            <div class="form-group"><label>WhatsApp (com DDD) <span style="color:#ef4444;">*</span></label><input type="text" id="r-phone" inputmode="numeric" /></div>
+            <div class="form-group"><label>Chave Pix</label><input type="text" id="r-pix" /></div>
           </div>
           <div style="padding:0 20px 20px;"><button class="btn btn-primary" onclick="createRunner()" style="max-width:200px;">Salvar</button></div>
         </div>
         <div class="card">
-          <table><thead><tr><th>Nome</th><th>E-mail</th><th>WhatsApp</th><th>Pix</th><th>Nota</th><th>Status</th><th>Ações</th></tr></thead>
+          <table><thead><tr><th>Nome</th><th>WhatsApp</th><th>Pix</th><th>Nota</th><th>Status</th><th>Ações</th></tr></thead>
           <tbody id="runners-tbody"></tbody></table>
         </div>`;
       loadRunners();
@@ -413,11 +412,10 @@
       const body = {
         name: document.getElementById("r-name").value.trim(),
         phone: document.getElementById("r-phone").value.trim(),
-        email: document.getElementById("r-email").value.trim(),
         pix_key: document.getElementById("r-pix").value.trim() || null,
         condominium_id: admin.condominium_id,
       };
-      if (!body.name || !body.email || !body.pix_key) return alert("Nome, e-mail e chave Pix são obrigatórios");
+      if (!body.name || !body.phone) return alert("Nome e WhatsApp são obrigatórios");
       const res = await apiFetch("/cadastro/parceiro", { method: "POST", body: JSON.stringify(body) });
       if (res?.ok) { document.getElementById("runner-form").style.display = "none"; loadRunners(); }
       else { const d = await res.json(); alert(d.detail || "Erro ao cadastrar"); }
@@ -428,16 +426,16 @@
       if (!res) return;
       const data = await res.json();
       const tbody = document.getElementById("runners-tbody");
-      if (!data.length) { tbody.innerHTML = `<tr class="empty-row"><td colspan="7">Nenhum parceiro.</td></tr>`; return; }
+      if (!data.length) { tbody.innerHTML = `<tr class="empty-row"><td colspan="6">Nenhum parceiro.</td></tr>`; return; }
       tbody.innerHTML = data.map(r => `
         <tr id="runner-row-${r.id}">
-          <td>${r.name}</td><td>${r.email}</td><td>${r.phone}</td><td>${r.pix_key || "—"}</td>
+          <td>${r.name}</td><td>${r.phone}</td><td>${r.pix_key || "—"}</td>
           <td>${r.rating ? "⭐ " + r.rating : "—"}</td>
           <td><span class="badge badge-${r.status}">${r.status}</span></td>
           <td style="display:flex;gap:6px;flex-wrap:nowrap;">
             ${r.status !== "approved" ? `<button class="btn-sm btn-approve" onclick="setRunnerStatus(${r.id},'approved')">Aprovar</button>` : ""}
             ${r.status !== "blocked" ? `<button class="btn-sm btn-block" onclick="setRunnerStatus(${r.id},'blocked')">Bloquear</button>` : ""}
-            <button class="btn-sm" style="background:#e0f2fe;color:#0369a1;" onclick="editRunner(${r.id},'${r.name}','${r.phone}','${r.email}','${r.pix_key||''}')">Editar</button>
+            <button class="btn-sm" style="background:#e0f2fe;color:#0369a1;" onclick="editRunner(${r.id},'${r.name}','${r.phone}','${r.pix_key||''}')">Editar</button>
             <label class="btn-sm" style="background:#f0fdf4;color:#166534;cursor:pointer;margin:0;">
               ${r.has_photo ? "Trocar foto" : "📷 Foto"}
               <input type="file" accept="image/*" style="display:none;" onchange="uploadRunnerPhoto(${r.id}, this)" />
@@ -452,11 +450,10 @@
       loadRunners();
     }
 
-    function editRunner(id, name, phone, email, pix) {
+    function editRunner(id, name, phone, pix) {
       const row = document.getElementById(`runner-row-${id}`);
       row.innerHTML = `
         <td><input type="text" value="${name}" id="er-name-${id}" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:5px;" /></td>
-        <td><input type="email" value="${email}" id="er-email-${id}" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:5px;" /></td>
         <td><input type="text" value="${phone}" id="er-phone-${id}" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:5px;" /></td>
         <td><input type="text" value="${pix}" id="er-pix-${id}" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:5px;" /></td>
         <td colspan="2" style="display:flex;gap:6px;">
@@ -468,7 +465,6 @@
     async function saveRunner(id) {
       const body = {
         name: document.getElementById(`er-name-${id}`).value.trim(),
-        email: document.getElementById(`er-email-${id}`).value.trim(),
         phone: document.getElementById(`er-phone-${id}`).value.trim(),
         pix_key: document.getElementById(`er-pix-${id}`).value.trim() || null,
       };
