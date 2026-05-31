@@ -159,7 +159,7 @@ def drop_unused_tables(key: str, db: Session = Depends(get_db)):
     if key != os.getenv("SETUP_KEY"):
         return {"error": "unauthorized"}
 
-    tables = ["push_subscriptions", "otp_codes"]
+    tables = ["push_subscriptions", "otp_codes", "runner_services"]
     results = []
     for table in tables:
         try:

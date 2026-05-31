@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query
 from fastapi.responses import Response
-from sqlalchemy import false as sql_false, update as sql_update
+from sqlalchemy import update as sql_update
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from datetime import datetime, timezone
@@ -51,26 +51,12 @@ class StatusUpdate(BaseModel):
 
 @router.get("/my")
 def my_tasks(db: Session = Depends(get_db), runner=Depends(get_current_runner)):
-    """Retorna tarefas do condomínio do parceiro — pendentes (filtradas por serviços aceitos) + as suas em andamento."""
-    active_service_ids = [
-        rs.service_type_id
-        for rs in db.query(models.RunnerService).filter(models.RunnerService.runner_id == runner.id).all()
-    ]
-
     tasks = (
         db.query(models.Task)
         .filter(
             models.Task.condominium_id == runner.condominium_id,
-            models.Task.status.in_(["solicitado", "aceito", "em_execucao", "concluido"]),
-        )
-        .filter(
-            # Próprias tarefas em andamento sempre visíveis
-            # Solicitadas: só se disponível e serviço ativo
-            (models.Task.runner_id == runner.id) |
-            (
-                (models.Task.runner_id == None) &
-                (models.Task.service_type_id.in_(active_service_ids) if (active_service_ids and runner.available) else sql_false())
-            )
+            models.Task.runner_id == runner.id,
+            models.Task.status.in_(["aceito", "em_execucao", "concluido"]),
         )
         .order_by(models.Task.created_at.desc())
         .all()
@@ -296,60 +282,6 @@ def set_available(body: AvailableUpdate, db: Session = Depends(get_db), runner=D
     db.commit()
     return {"available": runner.available}
 
-
-@router.get("/me/services")
-def get_my_services(db: Session = Depends(get_db), runner=Depends(get_current_runner)):
-    """Retorna todos os serviços do condomínio com flag de se o parceiro os aceita."""
-    services = db.query(models.ServiceType).filter(
-        models.ServiceType.condominium_id == runner.condominium_id,
-        models.ServiceType.active == True,
-    ).all()
-
-    active_ids = {
-        rs.service_type_id
-        for rs in db.query(models.RunnerService).filter(models.RunnerService.runner_id == runner.id).all()
-    }
-
-    return [
-        {
-            "id": s.id,
-            "name": s.name,
-            "price": s.price,
-            "price_fmt": f"R$ {s.price / 100:.2f}".replace(".", ",") if s.price else "a combinar",
-            "active": s.id in active_ids,
-        }
-        for s in services
-    ]
-
-
-class ServiceToggle(BaseModel):
-    service_type_id: int
-    active: bool
-
-
-@router.patch("/me/services")
-def toggle_my_service(body: ServiceToggle, db: Session = Depends(get_db), runner=Depends(get_current_runner)):
-    """Ativa ou desativa um serviço para o parceiro."""
-    service = db.query(models.ServiceType).filter(
-        models.ServiceType.id == body.service_type_id,
-        models.ServiceType.condominium_id == runner.condominium_id,
-    ).first()
-    if not service:
-        raise HTTPException(status_code=404, detail="Serviço não encontrado")
-
-    existing = db.query(models.RunnerService).filter(
-        models.RunnerService.runner_id == runner.id,
-        models.RunnerService.service_type_id == body.service_type_id,
-    ).first()
-
-    if body.active and not existing:
-        db.add(models.RunnerService(runner_id=runner.id, service_type_id=body.service_type_id))
-        db.commit()
-    elif not body.active and existing:
-        db.delete(existing)
-        db.commit()
-
-    return {"service_type_id": body.service_type_id, "active": body.active}
 
 
 @router.post("/{task_id}/cancel")
