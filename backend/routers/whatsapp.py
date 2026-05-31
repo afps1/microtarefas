@@ -14,7 +14,7 @@ router = APIRouter(prefix="/whatsapp", tags=["whatsapp"])
 log = logging.getLogger(__name__)
 
 VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", "")
-APP_URL = os.getenv("APP_URL", "https://postino.com.br").rstrip("/")
+APP_URL = os.getenv("LINK_URL", os.getenv("APP_URL", "https://postino.com.br")).rstrip("/")
 
 
 def wa_phone(phone: str) -> str:
