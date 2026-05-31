@@ -274,6 +274,7 @@ async def _confirmar_pedido(resident: models.Resident, pending: models.PendingRe
         models.Runner.status == "approved",
         models.Runner.available == True,
         models.Runner.available_until > now,
+        models.Runner.phone != resident.phone,
     )
     if task.service_type_id:
         runners_query = runners_query.join(
