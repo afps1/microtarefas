@@ -257,7 +257,7 @@ def _handle_runner_message(runner: models.Runner, text: str, db: Session):
                 wa_phone(runner.phone),
                 f"Olá, {nome}! Você está disponível até às {hora_str}. Para cancelar disponibilidade digite *cancelar*, ou informe um novo tempo (ex: *2h*, *30min*).",
             )
-        else:
+        elif text_lower in ("olá", "ola", "oi", "hello", "hi", "bom dia", "boa tarde", "boa noite"):
             send_message(
                 wa_phone(runner.phone),
                 f"Olá, {nome}! Por quanto tempo deseja ficar disponível para receber tarefas? (ex: *2h*, *30min*, *1h30*)",
