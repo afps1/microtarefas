@@ -15,6 +15,11 @@ import models
 router = APIRouter(prefix="/whatsapp", tags=["whatsapp"])
 log = logging.getLogger(__name__)
 
+# Cache simples para deduplicar webhooks duplicados da Meta
+_processed_ids: set[str] = set()
+_processed_ids_list: list[str] = []  # para limitar tamanho
+MAX_CACHED_IDS = 500
+
 VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", "")
 APP_URL = os.getenv("LINK_URL", os.getenv("APP_URL", "https://postino.com.br")).rstrip("/")
 
@@ -57,6 +62,16 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
             return {"status": "no_message"}
 
         msg = messages[0]
+        msg_id = msg.get("id", "")
+        if msg_id and msg_id in _processed_ids:
+            return {"status": "duplicate"}
+        if msg_id:
+            _processed_ids.add(msg_id)
+            _processed_ids_list.append(msg_id)
+            if len(_processed_ids_list) > MAX_CACHED_IDS:
+                old = _processed_ids_list.pop(0)
+                _processed_ids.discard(old)
+
         raw_phone = msg["from"]
         phone = raw_phone[2:] if raw_phone.startswith("55") and len(raw_phone) == 13 else raw_phone
         msg_type = msg.get("type", "text")
