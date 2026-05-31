@@ -85,6 +85,14 @@ def run_migration(key: str, db: Session = Depends(get_db)):
         ("runners", "available_until", "DATETIME NULL"),
     ]
 
+    # Email do parceiro passa a ser opcional
+    try:
+        db.execute(text("ALTER TABLE runners MODIFY COLUMN email VARCHAR(200) NULL"))
+        db.commit()
+        results.append({"sql": "ALTER TABLE runners email nullable", "status": "ok"})
+    except Exception as e:
+        results.append({"sql": "ALTER TABLE runners email nullable", "status": str(e)})
+
     results = []
     for sql in sqls:
         try:
