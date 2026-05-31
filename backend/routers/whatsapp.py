@@ -14,7 +14,7 @@ router = APIRouter(prefix="/whatsapp", tags=["whatsapp"])
 log = logging.getLogger(__name__)
 
 VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", "")
-APP_URL = os.getenv("APP_URL", "https://postino.com.br")
+APP_URL = os.getenv("APP_URL", "https://postino.com.br").rstrip("/")
 
 
 def wa_phone(phone: str) -> str:
@@ -293,7 +293,7 @@ async def _confirmar_pedido(resident: models.Resident, pending: models.PendingRe
         desc_extra = f"\n_{pending.description}_" if pending.description else ""
         send_message(
             wa_phone(r.phone),
-            f"Nova tarefa disponivel: *{label}*{price_info}\nLocal: {apt}{desc_extra}\n\n{link}",
+            f"Nova tarefa disponível: *{label}*{price_info}\nLocal: {apt}{desc_extra}\n\n*Para aceitar pressione o link abaixo.*\n{link}",
         )
 
     db.commit()
