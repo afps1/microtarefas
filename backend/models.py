@@ -45,6 +45,7 @@ class Runner(Base):
     photo_url = Column(String(500))
     status = Column(Enum("pending", "approved", "blocked"), default="pending")
     available = Column(Boolean, default=True)
+    available_until = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     condominium = relationship("Condominium", back_populates="runners")
@@ -102,6 +103,7 @@ class MagicLink(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     task = relationship("Task", back_populates="magic_links")
+    runner = relationship("Runner", foreign_keys=[runner_id])
 
 
 class ServiceType(Base):

@@ -10,7 +10,6 @@ from services.whatsapp_service import send_message, send_image, upload_media, ge
 from services.jwt_service import decode_token
 import models
 import pathlib
-import os
 
 PHOTOS_DIR = pathlib.Path("/data/fotos")
 PHOTOS_DIR.mkdir(parents=True, exist_ok=True)
@@ -287,16 +286,6 @@ def proxy_media(media_id: str, token: str = Query(...)):
 
 
 
-@router.get("/push-vapid-key")
-def get_vapid_key():
-    return {"public_key": os.getenv("VAPID_PUBLIC_KEY", "")}
-
-
-class PushSubscriptionBody(BaseModel):
-    endpoint: str
-    keys: dict
-
-
 class AvailableUpdate(BaseModel):
     available: bool
 
@@ -306,24 +295,6 @@ def set_available(body: AvailableUpdate, db: Session = Depends(get_db), runner=D
     runner.available = body.available
     db.commit()
     return {"available": runner.available}
-
-
-@router.post("/me/push-subscription")
-def save_push_subscription(body: PushSubscriptionBody, db: Session = Depends(get_db), runner=Depends(get_current_runner)):
-    existing = db.query(models.PushSubscription).filter(models.PushSubscription.runner_id == runner.id).first()
-    if existing:
-        existing.endpoint = body.endpoint
-        existing.p256dh = body.keys.get("p256dh", "")
-        existing.auth = body.keys.get("auth", "")
-    else:
-        db.add(models.PushSubscription(
-            runner_id=runner.id,
-            endpoint=body.endpoint,
-            p256dh=body.keys.get("p256dh", ""),
-            auth=body.keys.get("auth", ""),
-        ))
-    db.commit()
-    return {"status": "ok"}
 
 
 @router.get("/me/services")

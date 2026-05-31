@@ -1,24 +1,24 @@
 import os
+import re
+import secrets
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Request, Response, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
 from services.gpt_service import interpret_message
 from services.whatsapp_service import send_message, get_media_download_url
-from services.push_service import send_push
 import models
 
 router = APIRouter(prefix="/whatsapp", tags=["whatsapp"])
 log = logging.getLogger(__name__)
 
 VERIFY_TOKEN = os.getenv("VERIFY_TOKEN", "")
-APP_URL = os.getenv("APP_URL", "http://localhost:3000")
+APP_URL = os.getenv("APP_URL", "https://postino.com.br")
 
 
 def wa_phone(phone: str) -> str:
     return phone if phone.startswith("55") else f"55{phone}"
-
 
 
 TASK_LABELS = {
@@ -77,6 +77,18 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
 
     log.warning(f"[WEBHOOK] raw_phone={raw_phone} phone_normalizado={phone}")
 
+    # Verifica se é parceiro primeiro
+    runner = db.query(models.Runner).filter(
+        models.Runner.phone == phone,
+        models.Runner.status == "approved",
+    ).first()
+
+    if runner:
+        if text:
+            _handle_runner_message(runner, text, db)
+        return {"status": "ok"}
+
+    # Caso contrário, trata como solicitante
     resident = db.query(models.Resident).filter(
         models.Resident.phone == phone,
         models.Resident.active == True,
@@ -87,7 +99,7 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
     if not resident:
         contact_email = os.getenv("CONTACT_EMAIL", "")
         contato = f"\n\nCaso tenha interesse em conhecer o Postino, entre em contato com {contact_email}" if contact_email else ""
-        send_message(raw_phone, f"Olá! Seu número não está cadastrado no sistema. Entre em contato com o responsável pelo seu local para ter acesso ao Postino. 😊{contato}")
+        send_message(raw_phone, f"Olá! Seu número não está cadastrado no sistema. Entre em contato com o responsável pelo seu local para ter acesso ao Postino.{contato}")
         return {"status": "unregistered"}
 
     text_lower = text.lower().strip() if text else ""
@@ -99,7 +111,6 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
 
     if pending:
         if pending.awaiting_observation:
-            # Qualquer texto vira observação; "não" pula
             obs = None if text_lower in ("não", "nao", "n", "nao obrigado", "não obrigado") else text
             pending.description = obs
             pending.awaiting_observation = False
@@ -155,7 +166,7 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
         if _handle_avaliacao(resident, int(text_lower), db):
             return {"status": "ok"}
 
-    # 3. Interpreta intenção
+    # 4. Interpreta intenção
     services = db.query(models.ServiceType).filter(
         models.ServiceType.condominium_id == resident.condominium_id,
         models.ServiceType.active == True,
@@ -182,8 +193,121 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
     return {"status": "ok"}
 
 
+# ── Fluxo do parceiro via WhatsApp ──
+
+def _parse_duration_minutes(text: str) -> int | None:
+    """Converte strings como '2h', '30min', '1h30', '90' em minutos. Retorna None se não reconhecer."""
+    text = text.lower().strip()
+    # "1h30min", "1h30m", "1h 30min", "1h30"
+    m = re.match(r'^(\d+)\s*h\s*(\d+)\s*(?:min|m)?$', text)
+    if m:
+        return int(m.group(1)) * 60 + int(m.group(2))
+    # "2h", "2 horas"
+    m = re.match(r'^(\d+)\s*h(?:oras?)?$', text)
+    if m:
+        return int(m.group(1)) * 60
+    # "30min", "30m", "30 minutos"
+    m = re.match(r'^(\d+)\s*(?:min(?:utos?)?|m)$', text)
+    if m:
+        return int(m.group(1))
+    # número puro → interpreta como horas
+    m = re.match(r'^(\d+)$', text)
+    if m:
+        horas = int(m.group(1))
+        if 1 <= horas <= 12:
+            return horas * 60
+    return None
+
+
+def _handle_runner_message(runner: models.Runner, text: str, db: Session):
+    minutes = _parse_duration_minutes(text)
+    now = datetime.now(timezone.utc)
+
+    if minutes is not None:
+        available_until = now + timedelta(minutes=minutes)
+        runner.available_until = available_until
+        runner.available = True
+        db.commit()
+
+        hora_str = available_until.strftime("%H:%M")
+        send_message(
+            wa_phone(runner.phone),
+            f"Certo, {runner.name.split()[0]}! Você está disponível até às {hora_str}. Avisarei assim que surgir uma tarefa.",
+        )
+    else:
+        # Qualquer outra mensagem → pede duração
+        send_message(
+            wa_phone(runner.phone),
+            f"Olá, {runner.name.split()[0]}! Por quanto tempo deseja ficar disponível para receber tarefas? (ex: *2h*, *30min*, *1h30*)",
+        )
+
+
+# ── Criação de tarefa e envio de links mágicos ──
+
+async def _confirmar_pedido(resident: models.Resident, pending: models.PendingRequest, db: Session):
+    service = pending.service_type
+    task = models.Task(
+        condominium_id=resident.condominium_id,
+        resident_id=resident.id,
+        type=pending.task_type,
+        description=pending.description,
+        status="solicitado",
+        service_type_id=service.id if service else None,
+        price=service.price if service else None,
+    )
+    db.add(task)
+    db.delete(pending)
+    db.flush()
+
+    label = service.name if service else TASK_LABELS.get(pending.task_type, pending.task_type)
+    price_info = (" — preço sugerido *R$ {:.2f}*".format(service.price / 100).replace(".", ",") if service.price else " — preço *a combinar*") if service else ""
+    send_message(
+        wa_phone(resident.phone),
+        f"Pedido confirmado: *{label}*{price_info}. Estamos buscando um parceiro disponível. Você será avisado em breve!\n\nSe quiser cancelar, é só responder *cancelar*.",
+    )
+    db.commit()
+
+    # Busca parceiros ativos (available_until > agora) do mesmo condomínio
+    now = datetime.now(timezone.utc)
+    runners_query = db.query(models.Runner).filter(
+        models.Runner.condominium_id == resident.condominium_id,
+        models.Runner.status == "approved",
+        models.Runner.available == True,
+        models.Runner.available_until > now,
+    )
+    if task.service_type_id:
+        runners_query = runners_query.join(
+            models.RunnerService,
+            (models.RunnerService.runner_id == models.Runner.id) &
+            (models.RunnerService.service_type_id == task.service_type_id),
+        )
+    active_runners = runners_query.all()
+
+    for r in active_runners:
+        token = secrets.token_urlsafe(16)
+        magic_link = models.MagicLink(
+            task_id=task.id,
+            runner_id=r.id,
+            token=token,
+            expires_at=r.available_until,
+        )
+        db.add(magic_link)
+        db.flush()
+
+        link = f"{APP_URL}/t/{token}"
+        apt = resident.apartment
+        desc_extra = f"\n_{pending.description}_" if pending.description else ""
+        send_message(
+            wa_phone(r.phone),
+            f"Nova tarefa disponivel: *{label}*{price_info}\nLocal: {apt}{desc_extra}\n\n{link}",
+        )
+
+    db.commit()
+
+
+# ── Handlers de solicitante ──
+
 def _handle_solicitar(resident: models.Resident, gpt_result: dict, db: Session):
-    # Verifica se já tem tarefa aberta
     open_task = db.query(models.Task).filter(
         models.Task.resident_id == resident.id,
         models.Task.status.in_(["solicitado", "aceito", "em_execucao"]),
@@ -200,14 +324,12 @@ def _handle_solicitar(resident: models.Resident, gpt_result: dict, db: Session):
     task_type = gpt_result.get("task_type") or "outro"
     description = gpt_result.get("description")
 
-    # Busca serviço pelo nome exato retornado pelo GPT
     service = db.query(models.ServiceType).filter(
         models.ServiceType.condominium_id == resident.condominium_id,
         models.ServiceType.active == True,
         models.ServiceType.name == task_type,
     ).first()
 
-    # Fallback: busca por similaridade
     if not service and task_type != "outro":
         service = db.query(models.ServiceType).filter(
             models.ServiceType.condominium_id == resident.condominium_id,
@@ -218,7 +340,6 @@ def _handle_solicitar(resident: models.Resident, gpt_result: dict, db: Session):
     label = service.name if service else task_type
     price_info = (" — preço sugerido *R$ {:.2f}*".format(service.price / 100).replace(".", ",") if service.price else " — preço *a combinar*") if service else ""
 
-    # Salva pedido pendente aguardando confirmação
     existing = db.query(models.PendingRequest).filter(
         models.PendingRequest.resident_id == resident.id
     ).first()
@@ -240,54 +361,6 @@ def _handle_solicitar(resident: models.Resident, gpt_result: dict, db: Session):
     )
 
 
-async def _confirmar_pedido(resident: models.Resident, pending: models.PendingRequest, db: Session):
-    service = pending.service_type
-    task = models.Task(
-        condominium_id=resident.condominium_id,
-        resident_id=resident.id,
-        type=pending.task_type,
-        description=pending.description,
-        status="solicitado",
-        service_type_id=service.id if service else None,
-        price=service.price if service else None,
-    )
-    db.add(task)
-    db.delete(pending)
-    db.flush()
-
-    label = service.name if service else TASK_LABELS.get(pending.task_type, pending.task_type)
-    price_info = (" — preço sugerido *R$ {:.2f}*".format(service.price / 100).replace(".", ",") if service.price else " — preço *a combinar*") if service else ""
-    send_message(
-        wa_phone(resident.phone),
-        f"✅ Pedido confirmado: *{label}*{price_info}. Estamos buscando um parceiro disponível. Você será avisado em breve!\n\nSe quiser cancelar, é só responder *cancelar*.",
-    )
-    db.commit()
-
-    # Notifica parceiros aprovados que aceitam este serviço
-    subs_query = (
-        db.query(models.PushSubscription)
-        .join(models.Runner, models.Runner.id == models.PushSubscription.runner_id)
-        .filter(
-            models.Runner.condominium_id == resident.condominium_id,
-            models.Runner.status == "approved",
-            models.Runner.available == True,
-        )
-    )
-    if task.service_type_id:
-        subs_query = subs_query.join(
-            models.RunnerService,
-            (models.RunnerService.runner_id == models.Runner.id) &
-            (models.RunnerService.service_type_id == task.service_type_id),
-        )
-    subs = subs_query.all()
-    for sub in subs:
-        send_push(
-            {"endpoint": sub.endpoint, "keys": {"p256dh": sub.p256dh, "auth": sub.auth}},
-            title="Nova tarefa!",
-            body=f"{label} — {resident.apartment}",
-        )
-
-
 def _handle_status(resident: models.Resident, db: Session):
     task = db.query(models.Task).filter(
         models.Task.resident_id == resident.id,
@@ -306,11 +379,10 @@ def _handle_status(resident: models.Resident, db: Session):
     }.get(task.status, task.status)
 
     runner_info = f"\nParceiro: {task.runner.name}" if task.runner else ""
-    send_message(wa_phone(resident.phone), f"📋 *{label}*\nStatus: {status_pt}{runner_info}")
+    send_message(wa_phone(resident.phone), f"*{label}*\nStatus: {status_pt}{runner_info}")
 
 
 def _handle_cancelar(resident: models.Resident, db: Session):
-    # Cancela pedido pendente primeiro
     pending = db.query(models.PendingRequest).filter(
         models.PendingRequest.resident_id == resident.id
     ).first()

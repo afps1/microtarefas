@@ -82,6 +82,7 @@ def run_migration(key: str, db: Session = Depends(get_db)):
         ("tasks", "price", "INT NULL"),
         ("pending_requests", "awaiting_observation", "BOOLEAN NOT NULL DEFAULT FALSE"),
         ("runners", "available", "BOOLEAN NOT NULL DEFAULT TRUE"),
+        ("runners", "available_until", "DATETIME NULL"),
     ]
 
     results = []
