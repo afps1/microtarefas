@@ -48,9 +48,10 @@ def cadastrar_morador(body: ResidentCreate, db: Session = Depends(get_db)):
     if not condo:
         raise HTTPException(status_code=404, detail="Condomínio não encontrado")
 
-    existing = db.query(models.Resident).filter(models.Resident.phone == body.phone).first()
-    if existing:
-        raise HTTPException(status_code=409, detail="Telefone já cadastrado")
+    if db.query(models.Resident).filter(models.Resident.phone == body.phone).first():
+        raise HTTPException(status_code=409, detail="Telefone já cadastrado como solicitante")
+    if db.query(models.Runner).filter(models.Runner.phone == body.phone).first():
+        raise HTTPException(status_code=409, detail="Este telefone já está cadastrado como parceiro e não pode ser solicitante")
 
     resident = models.Resident(
         name=body.name,
@@ -80,7 +81,9 @@ def cadastrar_parceiro(body: RunnerCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Condomínio não encontrado")
 
     if db.query(models.Runner).filter(models.Runner.phone == body.phone).first():
-        raise HTTPException(status_code=409, detail="Telefone já cadastrado")
+        raise HTTPException(status_code=409, detail="Telefone já cadastrado como parceiro")
+    if db.query(models.Resident).filter(models.Resident.phone == body.phone).first():
+        raise HTTPException(status_code=409, detail="Este telefone já está cadastrado como solicitante e não pode ser parceiro")
 
     runner = models.Runner(
         name=body.name,
