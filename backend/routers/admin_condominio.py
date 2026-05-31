@@ -40,7 +40,6 @@ class ServiceTypeUpdate(BaseModel):
 class RunnerUpdate(BaseModel):
     name: Optional[str] = None
     phone: Optional[str] = None
-    email: Optional[EmailStr] = None
     pix_key: Optional[str] = None
 
 
@@ -225,11 +224,10 @@ def update_runner(
 
     if body.name is not None: runner.name = body.name
     if body.phone is not None: runner.phone = body.phone
-    if body.email is not None: runner.email = body.email
     if body.pix_key is not None: runner.pix_key = body.pix_key
 
     db.commit()
-    return {"id": runner.id, "name": runner.name, "email": runner.email, "phone": runner.phone, "pix_key": runner.pix_key}
+    return {"id": runner.id, "name": runner.name, "phone": runner.phone, "pix_key": runner.pix_key}
 
 
 @router.delete("/runners/{runner_id}", status_code=status.HTTP_204_NO_CONTENT)
