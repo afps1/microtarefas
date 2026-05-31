@@ -155,3 +155,19 @@ def clean_tasks(key: str, db: Session = Depends(get_db)):
     db.execute(text("DELETE FROM tasks"))
     db.commit()
     return {"status": "ok", "message": "Tarefas, mensagens, magic links e avaliações removidos."}
+
+
+@router.post("/reset-admin-passwords")
+def reset_admin_passwords(key: str, db: Session = Depends(get_db)):
+    if key != os.getenv("SETUP_KEY"):
+        return {"error": "unauthorized"}
+
+    emails = ["asonnenb@gmail.com", "asonnenb2@gmail.com"]
+    pw_hash = "$2b$12$LlhAPzMqQymudzwXT4CiDOeFy3/b1nRPQYjYzvcU5fdpE5LC4jYei"
+
+    updated = db.execute(
+        text("UPDATE admin_users SET password_hash = :h WHERE email IN :emails"),
+        {"h": pw_hash, "emails": tuple(emails)},
+    ).rowcount
+    db.commit()
+    return {"updated": updated, "emails": emails}
