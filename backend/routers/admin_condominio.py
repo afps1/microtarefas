@@ -129,7 +129,6 @@ def list_runners(db: Session = Depends(get_db), admin=Depends(get_admin_condomin
         result.append({
             "id": r.id,
             "name": r.name,
-            "email": r.email,
             "phone": r.phone,
             "pix_key": r.pix_key,
             "status": r.status,
