@@ -224,6 +224,18 @@ def _parse_duration_minutes(text: str) -> int | None:
 def _handle_runner_message(runner: models.Runner, text: str, db: Session):
     minutes = _parse_duration_minutes(text)
     now = datetime.now(timezone.utc)
+    nome = runner.name.split()[0]
+    text_lower = text.lower().strip()
+
+    if text_lower in ("cancelar", "cancela", "cancel"):
+        runner.available = False
+        runner.available_until = None
+        db.commit()
+        send_message(
+            wa_phone(runner.phone),
+            f"Ok, {nome}! Sua disponibilidade foi cancelada. Quando quiser voltar é só me mandar o tempo disponível.",
+        )
+        return
 
     if minutes is not None:
         available_until = now + timedelta(minutes=minutes)
@@ -234,14 +246,21 @@ def _handle_runner_message(runner: models.Runner, text: str, db: Session):
         hora_str = available_until.astimezone(BR_TZ).strftime("%H:%M")
         send_message(
             wa_phone(runner.phone),
-            f"Certo, {runner.name.split()[0]}! Você está disponível até às {hora_str}. Avisarei assim que surgir uma tarefa.",
+            f"Certo, {nome}! Você está disponível até às {hora_str}. Avisarei assim que surgir uma tarefa.",
         )
     else:
-        # Qualquer outra mensagem → pede duração
-        send_message(
-            wa_phone(runner.phone),
-            f"Olá, {runner.name.split()[0]}! Por quanto tempo deseja ficar disponível para receber tarefas? (ex: *2h*, *30min*, *1h30*)",
-        )
+        # Verifica se já está disponível
+        if runner.available and runner.available_until and runner.available_until > now:
+            hora_str = runner.available_until.astimezone(BR_TZ).strftime("%H:%M")
+            send_message(
+                wa_phone(runner.phone),
+                f"Olá, {nome}! Você está disponível até às {hora_str}. Para cancelar digite *cancelar*, ou informe um novo tempo (ex: *2h*, *30min*).",
+            )
+        else:
+            send_message(
+                wa_phone(runner.phone),
+                f"Olá, {nome}! Por quanto tempo deseja ficar disponível para receber tarefas? (ex: *2h*, *30min*, *1h30*)",
+            )
 
 
 # ── Criação de tarefa e envio de links mágicos ──
