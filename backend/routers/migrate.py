@@ -85,14 +85,6 @@ def run_migration(key: str, db: Session = Depends(get_db)):
         ("runners", "available_until", "DATETIME NULL"),
     ]
 
-    # Remove coluna email dos parceiros
-    try:
-        db.execute(text("ALTER TABLE runners DROP COLUMN email"))
-        db.commit()
-        results.append({"sql": "DROP COLUMN runners.email", "status": "ok"})
-    except Exception as e:
-        results.append({"sql": "DROP COLUMN runners.email", "status": str(e)})
-
     results = []
     for sql in sqls:
         try:
@@ -116,6 +108,14 @@ def run_migration(key: str, db: Session = Depends(get_db)):
                 results.append({"sql": f"ADD COLUMN {table}.{column}", "status": str(e)})
         else:
             results.append({"sql": f"ADD COLUMN {table}.{column}", "status": "already exists"})
+
+    # Remove coluna email dos parceiros se ainda existir
+    try:
+        db.execute(text("ALTER TABLE runners DROP COLUMN email"))
+        db.commit()
+        results.append({"sql": "DROP COLUMN runners.email", "status": "ok"})
+    except Exception as e:
+        results.append({"sql": "DROP COLUMN runners.email", "status": str(e)})
 
     # Altera Enum de status das tarefas para incluir 'cancelado'
     alter_sql = "ALTER TABLE tasks MODIFY COLUMN status ENUM('solicitado','aceito','em_execucao','concluido','recebido','cancelado') NOT NULL DEFAULT 'solicitado'"
