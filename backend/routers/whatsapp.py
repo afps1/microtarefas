@@ -250,8 +250,9 @@ def _handle_runner_message(runner: models.Runner, text: str, db: Session):
         )
     else:
         # Verifica se já está disponível
-        if runner.available and runner.available_until and runner.available_until > now:
-            hora_str = runner.available_until.astimezone(BR_TZ).strftime("%H:%M")
+        au = runner.available_until.replace(tzinfo=timezone.utc) if runner.available_until else None
+        if runner.available and au and au > now:
+            hora_str = au.astimezone(BR_TZ).strftime("%H:%M")
             send_message(
                 wa_phone(runner.phone),
                 f"Olá, {nome}! Você está disponível até às {hora_str}. Para cancelar digite *cancelar*, ou informe um novo tempo (ex: *2h*, *30min*).",
@@ -294,7 +295,7 @@ async def _confirmar_pedido(resident: models.Resident, pending: models.PendingRe
         models.Runner.condominium_id == resident.condominium_id,
         models.Runner.status == "approved",
         models.Runner.available == True,
-        models.Runner.available_until > now,
+        models.Runner.available_until > datetime.utcnow(),
         models.Runner.phone != resident.phone,
     ).all()
 
