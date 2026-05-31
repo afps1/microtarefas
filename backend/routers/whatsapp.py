@@ -269,20 +269,13 @@ async def _confirmar_pedido(resident: models.Resident, pending: models.PendingRe
 
     # Busca parceiros ativos (available_until > agora) do mesmo condomínio
     now = datetime.now(timezone.utc)
-    runners_query = db.query(models.Runner).filter(
+    active_runners = db.query(models.Runner).filter(
         models.Runner.condominium_id == resident.condominium_id,
         models.Runner.status == "approved",
         models.Runner.available == True,
         models.Runner.available_until > now,
         models.Runner.phone != resident.phone,
-    )
-    if task.service_type_id:
-        runners_query = runners_query.join(
-            models.RunnerService,
-            (models.RunnerService.runner_id == models.Runner.id) &
-            (models.RunnerService.service_type_id == task.service_type_id),
-        )
-    active_runners = runners_query.all()
+    ).all()
 
     for r in active_runners:
         token = secrets.token_urlsafe(16)
