@@ -40,7 +40,7 @@ class Runner(Base):
     condominium_id = Column(Integer, ForeignKey("condominiums.id"), nullable=False)
     name = Column(String(200), nullable=False)
     phone = Column(String(20), unique=True, nullable=False)
-    email = Column(String(200), unique=True, nullable=False)
+    email = Column(String(200), unique=True, nullable=True)
     pix_key = Column(String(200))
     photo_url = Column(String(500))
     status = Column(Enum("pending", "approved", "blocked"), default="pending")

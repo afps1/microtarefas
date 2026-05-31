@@ -18,7 +18,7 @@ class ResidentCreate(BaseModel):
 class RunnerCreate(BaseModel):
     name: str
     phone: str
-    email: EmailStr
+    email: EmailStr | None = None
     pix_key: str | None = None
     condominium_id: int
 
@@ -83,7 +83,7 @@ def cadastrar_parceiro(body: RunnerCreate, db: Session = Depends(get_db)):
     if db.query(models.Runner).filter(models.Runner.phone == body.phone).first():
         raise HTTPException(status_code=409, detail="Telefone já cadastrado")
 
-    if db.query(models.Runner).filter(models.Runner.email == body.email).first():
+    if body.email and db.query(models.Runner).filter(models.Runner.email == body.email).first():
         raise HTTPException(status_code=409, detail="E-mail já cadastrado")
 
     runner = models.Runner(
