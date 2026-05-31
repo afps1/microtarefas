@@ -3,6 +3,8 @@ import re
 import secrets
 import logging
 from datetime import datetime, timezone, timedelta
+import zoneinfo
+BR_TZ = zoneinfo.ZoneInfo("America/Sao_Paulo")
 from fastapi import APIRouter, Request, Response, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
@@ -229,7 +231,7 @@ def _handle_runner_message(runner: models.Runner, text: str, db: Session):
         runner.available = True
         db.commit()
 
-        hora_str = available_until.strftime("%H:%M")
+        hora_str = available_until.astimezone(BR_TZ).strftime("%H:%M")
         send_message(
             wa_phone(runner.phone),
             f"Certo, {runner.name.split()[0]}! Você está disponível até às {hora_str}. Avisarei assim que surgir uma tarefa.",
