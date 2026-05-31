@@ -163,29 +163,6 @@ class TaskMessage(Base):
     task = relationship("Task", foreign_keys=[task_id])
 
 
-class PushSubscription(Base):
-    __tablename__ = "push_subscriptions"
-
-    id = Column(Integer, primary_key=True)
-    runner_id = Column(Integer, ForeignKey("runners.id"), nullable=False, unique=True)
-    endpoint = Column(Text, nullable=False)
-    p256dh = Column(Text, nullable=False)
-    auth = Column(Text, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-    runner = relationship("Runner", foreign_keys=[runner_id])
-
-
-class OtpCode(Base):
-    __tablename__ = "otp_codes"
-
-    id = Column(Integer, primary_key=True)
-    email = Column(String(200), nullable=False)
-    code = Column(String(10), nullable=False)
-    expires_at = Column(DateTime, nullable=False)
-    used_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
 
 class RunnerService(Base):
     __tablename__ = "runner_services"

@@ -157,6 +157,23 @@ def clean_tasks(key: str, db: Session = Depends(get_db)):
     return {"status": "ok", "message": "Tarefas, mensagens, magic links e avaliações removidos."}
 
 
+@router.post("/drop-unused-tables")
+def drop_unused_tables(key: str, db: Session = Depends(get_db)):
+    if key != os.getenv("SETUP_KEY"):
+        return {"error": "unauthorized"}
+
+    tables = ["push_subscriptions", "otp_codes"]
+    results = []
+    for table in tables:
+        try:
+            db.execute(text(f"DROP TABLE IF EXISTS {table}"))
+            db.commit()
+            results.append({"table": table, "status": "dropped"})
+        except Exception as e:
+            results.append({"table": table, "status": str(e)})
+    return {"results": results}
+
+
 @router.post("/reset-admin-passwords")
 def reset_admin_passwords(key: str, db: Session = Depends(get_db)):
     if key != os.getenv("SETUP_KEY"):

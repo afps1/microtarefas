@@ -4,7 +4,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 import os
 from database import engine, Base
-from routers import auth_runner, auth_admin, admin_geral, admin_condominio, tasks, cadastro, whatsapp, setup, migrate, tarefa
+from routers import auth_admin, admin_geral, admin_condominio, tasks, cadastro, whatsapp, setup, migrate, tarefa
 
 Base.metadata.create_all(bind=engine)
 
@@ -25,7 +25,6 @@ async def redirect_www(request: Request, call_next):
         return RedirectResponse(url=str(url), status_code=301)
     return await call_next(request)
 
-app.include_router(auth_runner.router)
 app.include_router(auth_admin.router)
 app.include_router(admin_geral.router)
 app.include_router(admin_condominio.router)
