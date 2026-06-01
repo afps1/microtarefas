@@ -476,18 +476,19 @@ def _parceiros_ativos(resident: models.Resident, db: Session) -> int:
     return q.count()
 
 
-def _rodape_parceiros(count: int) -> str:
-    if count == 0:
-        return "\n\nInfelizmente agora não temos parceiros ativos. Tente mais tarde."
-    return f"\n\nNo momento temos *{count}* parceiro{'s' if count > 1 else ''} ativo{'s' if count > 1 else ''}."
-
 
 def _handle_listar_servicos(resident: models.Resident, services, db: Session):
+    ativos = _parceiros_ativos(resident, db)
+    if ativos == 0:
+        send_message(
+            wa_phone(resident.phone),
+            "Infelizmente agora não temos parceiros ativos. Tente mais tarde.",
+        )
+        return
     menu = _menu_servicos(services)
-    rodape = _rodape_parceiros(_parceiros_ativos(resident, db))
     send_message(
         wa_phone(resident.phone),
-        f"Estes são os serviços disponíveis:\n\n{menu}\n\nÉ só pedir!{rodape}",
+        f"Estes são os serviços disponíveis:\n\n{menu}\n\nÉ só pedir!\n\nNo momento temos *{ativos}* parceiro{'s' if ativos > 1 else ''} ativo{'s' if ativos > 1 else ''}.",
     )
 
 
@@ -506,11 +507,17 @@ def _handle_servico_indisponivel(resident: models.Resident, services, db: Sessio
 
 
 def _handle_outro(resident: models.Resident, services, db: Session):
+    ativos = _parceiros_ativos(resident, db)
+    if ativos == 0:
+        send_message(
+            wa_phone(resident.phone),
+            "Infelizmente agora não temos parceiros ativos. Tente mais tarde.",
+        )
+        return
     menu = _menu_servicos(services)
-    rodape = _rodape_parceiros(_parceiros_ativos(resident, db))
     send_message(
         wa_phone(resident.phone),
-        f"Olá! Posso ajudar a solicitar serviços:\n\n{menu}\n\nÉ só me dizer o que precisa!{rodape}",
+        f"Olá! Posso ajudar a solicitar serviços:\n\n{menu}\n\nÉ só me dizer o que precisa!\n\nNo momento temos *{ativos}* parceiro{'s' if ativos > 1 else ''} ativo{'s' if ativos > 1 else ''}.",
     )
 
 
