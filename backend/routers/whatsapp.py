@@ -3,6 +3,7 @@ import re
 import secrets
 import logging
 import time
+import random
 from datetime import datetime, timezone, timedelta
 import zoneinfo
 BR_TZ = zoneinfo.ZoneInfo("America/Sao_Paulo")
@@ -323,6 +324,7 @@ async def _confirmar_pedido(resident: models.Resident, pending: models.PendingRe
         models.Runner.id.notin_(busy_runner_ids),
     ).all()
 
+    random.shuffle(active_runners)
     for i, r in enumerate(active_runners):
         token = secrets.token_urlsafe(16)
         magic_link = models.MagicLink(
