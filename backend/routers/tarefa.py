@@ -105,34 +105,35 @@ def _render_page(token: str, runner: models.Runner, task: models.Task, db: Sessi
 <title>Tarefa — Postino</title>
 <style>
   * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-  body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f1f5f9; min-height: 100vh; }}
-  .header {{ background: #2563eb; color: #fff; padding: 16px 20px; display: flex; align-items: center; gap: 12px; }}
+  html, body {{ height: 100%; }}
+  body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f1f5f9; display: flex; flex-direction: column; height: 100%; }}
+  .header {{ background: #2563eb; color: #fff; padding: 16px 20px; display: flex; align-items: center; flex-shrink: 0; }}
   .header-logo {{ font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }}
   .header-name {{ font-size: 14px; opacity: 0.85; margin-left: auto; }}
-  .card {{ background: #fff; border-radius: 12px; margin: 16px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }}
+  .card {{ background: #fff; border-radius: 12px; margin: 16px 16px 0; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); flex-shrink: 0; }}
   .tag {{ display: inline-block; background: #dbeafe; color: #1d4ed8; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 20px; margin-bottom: 12px; }}
   .task-type {{ font-size: 22px; font-weight: 700; color: #0f172a; margin-bottom: 4px; }}
   .task-price {{ font-size: 18px; color: #16a34a; font-weight: 600; margin-bottom: 12px; }}
   .info-row {{ display: flex; align-items: center; gap: 8px; color: #475569; font-size: 14px; margin-bottom: 6px; }}
   .desc {{ color: #64748b; font-size: 14px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f1f5f9; }}
   .status-badge {{ display: inline-flex; align-items: center; gap: 6px; background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; border-radius: 20px; padding: 4px 14px; font-size: 13px; font-weight: 600; margin-top: 12px; }}
-  .actions {{ margin: 0 16px 16px; display: flex; flex-direction: column; gap: 10px; }}
-  .btn-primary {{ width: 100%; padding: 16px; background: #2563eb; color: #fff; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.15s; }}
+  .actions {{ margin: 12px 16px 0; display: flex; gap: 10px; flex-shrink: 0; }}
+  .btn-primary {{ flex: 1; padding: 14px; background: #2563eb; color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.15s; }}
   .btn-primary:active {{ background: #1d4ed8; }}
   .btn-primary:disabled {{ background: #93c5fd; cursor: not-allowed; }}
-  .btn-cancel {{ width: 100%; padding: 14px; background: #fff; color: #dc2626; border: 1.5px solid #fca5a5; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; }}
-  .chat-section {{ margin: 0 16px 16px; }}
-  .chat-title {{ font-size: 14px; font-weight: 600; color: #475569; margin-bottom: 8px; }}
-  .messages {{ background: #fff; border-radius: 12px; padding: 12px; min-height: 80px; max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }}
+  .btn-cancel {{ padding: 14px 16px; background: #fff; color: #dc2626; border: 1.5px solid #fca5a5; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; }}
+  .chat-section {{ margin: 12px 16px 0; display: flex; flex-direction: column; flex: 1; min-height: 0; }}
+  .chat-title {{ font-size: 14px; font-weight: 600; color: #475569; margin-bottom: 8px; flex-shrink: 0; }}
+  .messages {{ background: #fff; border-radius: 12px; padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); flex: 1; min-height: 0; }}
   .msg {{ max-width: 78%; padding: 8px 12px; border-radius: 14px; font-size: 14px; line-height: 1.4; }}
   .msg.parceiro {{ align-self: flex-end; background: #2563eb; color: #fff; border-bottom-right-radius: 4px; }}
   .msg.morador {{ align-self: flex-start; background: #f1f5f9; color: #0f172a; border-bottom-left-radius: 4px; }}
-  .msg-input-row {{ display: flex; gap: 8px; margin-top: 8px; }}
+  .msg-input-row {{ display: flex; gap: 8px; padding: 12px 16px; background: #fff; border-top: 1px solid #e2e8f0; flex-shrink: 0; }}
   .msg-input {{ flex: 1; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 14px; outline: none; }}
   .msg-input:focus {{ border-color: #2563eb; }}
-  .msg-send {{ padding: 10px 16px; background: #2563eb; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }}
+  .msg-send {{ padding: 10px 18px; background: #2563eb; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }}
   .empty {{ color: #94a3b8; font-size: 13px; text-align: center; padding: 16px 0; }}
-  .toast {{ position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #0f172a; color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 100; }}
+  .toast {{ position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #0f172a; color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 100; }}
   .toast.show {{ opacity: 1; }}
 </style>
 </head>
@@ -162,7 +163,7 @@ def _render_page(token: str, runner: models.Runner, task: models.Task, db: Sessi
   {cancel_html}
 </div>
 
-{'<div class="chat-section"><div class="chat-title">Chat com solicitante</div><div class="messages" id="msgs"><div class="empty">Carregando...</div></div><div class="msg-input-row"><input class="msg-input" id="txt" placeholder="Mensagem..." /><button class="msg-send" onclick="enviar()">Enviar</button></div></div>' if task.status in ('aceito', 'em_execucao') else ''}
+{'<div class="chat-section"><div class="chat-title">Chat com solicitante</div><div class="messages" id="msgs"><div class="empty">Carregando...</div></div></div><div class="msg-input-row"><input class="msg-input" id="txt" placeholder="Mensagem..." /><button class="msg-send" onclick="enviar()">Enviar</button></div>' if task.status in ('aceito', 'em_execucao') else ''}
 
 <div class="toast" id="toast"></div>
 
