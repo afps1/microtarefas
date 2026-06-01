@@ -157,7 +157,7 @@ def _render_page(token: str, runner: models.Runner, task: models.Task, db: Sessi
       {status_atual}
     </div>
   </div>
-  {'<div class="desc"><strong>ATENÇÃO:</strong> ' + desc + '</div>' if desc else ''}
+  {'<div class="desc"><strong>Obs:</strong> ' + desc + '</div>' if desc else ''}
 </div>
 
 <div class="actions">
