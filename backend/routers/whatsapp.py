@@ -306,12 +306,20 @@ async def _confirmar_pedido(resident: models.Resident, pending: models.PendingRe
 
     # Busca parceiros ativos (available_until > agora) do mesmo condomínio
     now = datetime.now(timezone.utc)
+    busy_runner_ids = [
+        t.runner_id for t in db.query(models.Task.runner_id).filter(
+            models.Task.status.in_(["aceito", "em_execucao"]),
+            models.Task.runner_id != None,
+        ).all()
+    ]
+
     active_runners = db.query(models.Runner).filter(
         models.Runner.condominium_id == resident.condominium_id,
         models.Runner.status == "approved",
         models.Runner.available == True,
         models.Runner.available_until > datetime.utcnow(),
         models.Runner.phone != resident.phone,
+        models.Runner.id.notin_(busy_runner_ids),
     ).all()
 
     for r in active_runners:
