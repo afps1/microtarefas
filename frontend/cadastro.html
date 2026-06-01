@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Postino — Cadastro</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f1f5f9; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
+    .card { background: #fff; border-radius: 16px; padding: 32px 28px; width: 100%; max-width: 420px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+    .logo { text-align: center; margin-bottom: 28px; }
+    .logo h1 { font-size: 28px; font-weight: 800; color: #2563eb; letter-spacing: -1px; }
+    .logo p { color: #64748b; font-size: 14px; margin-top: 4px; }
+    .role-selector { display: flex; gap: 10px; margin-bottom: 24px; }
+    .role-btn { flex: 1; padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; background: #fff; font-size: 14px; font-weight: 600; color: #64748b; cursor: pointer; transition: all 0.15s; text-align: center; }
+    .role-btn.active { border-color: #2563eb; background: #eff6ff; color: #2563eb; }
+    .form-group { margin-bottom: 16px; }
+    label { display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px; }
+    input, select { width: 100%; padding: 11px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 15px; outline: none; background: #fff; transition: border-color 0.15s; }
+    input:focus, select:focus { border-color: #2563eb; }
+    .optin { font-size: 12px; color: #64748b; margin-bottom: 20px; line-height: 1.5; }
+    .optin a { color: #2563eb; text-decoration: none; }
+    .btn { width: 100%; padding: 14px; background: #2563eb; color: #fff; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+    .btn:active { background: #1d4ed8; }
+    .btn:disabled { background: #93c5fd; cursor: not-allowed; }
+    .alert { display: none; padding: 12px 14px; border-radius: 8px; font-size: 14px; margin-bottom: 16px; }
+    .alert.show { display: block; }
+    .alert-error { background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; }
+    .success { text-align: center; padding: 16px 0; }
+    .success-icon { font-size: 48px; margin-bottom: 16px; }
+    .success h2 { font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 8px; }
+    .success p { color: #64748b; font-size: 14px; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">
+      <h1>Postino</h1>
+      <p>Cadastro</p>
+    </div>
+
+    <div id="alert" class="alert"></div>
+
+    <div id="form-section">
+      <div class="role-selector">
+        <button class="role-btn active" id="btn-solicitante" onclick="setRole('solicitante')">Solicitante</button>
+        <button class="role-btn" id="btn-parceiro" onclick="setRole('parceiro')">Parceiro</button>
+      </div>
+
+      <form id="form-cadastro">
+        <div class="form-group">
+          <label>Nome completo</label>
+          <input type="text" id="name" placeholder="João da Silva" required />
+        </div>
+        <div class="form-group">
+          <label>WhatsApp (com DDD)</label>
+          <input type="text" id="phone" placeholder="11999999999" required inputmode="numeric" />
+        </div>
+
+        <!-- Campo exclusivo solicitante -->
+        <div class="form-group" id="field-apartment">
+          <label>Unidade / Local</label>
+          <input type="text" id="apartment" placeholder="101" />
+        </div>
+
+        <!-- Campo exclusivo parceiro -->
+        <div class="form-group" id="field-pix" style="display:none;">
+          <label>Chave Pix</label>
+          <input type="text" id="pix_key" placeholder="CPF, e-mail ou telefone" />
+        </div>
+
+        <div class="form-group">
+          <label>Local / Condomínio</label>
+          <select id="condominium" required>
+            <option value="">Selecione...</option>
+          </select>
+        </div>
+
+        <p class="optin">Ao se cadastrar, você concorda em receber notificações pelo WhatsApp e com os <a href="/termos" target="_blank">termos de uso</a> do Postino.</p>
+
+        <button type="submit" class="btn" id="btn-submit">Cadastrar</button>
+      </form>
+    </div>
+
+    <div id="success-section" class="success" style="display:none;">
+      <div class="success-icon">🎉</div>
+      <h2 id="success-title">Cadastro enviado!</h2>
+      <p id="success-msg"></p>
+    </div>
+  </div>
+
+  <script>
+    const API = "";
+    let role = "solicitante";
+
+    function setRole(r) {
+      role = r;
+      document.getElementById("btn-solicitante").classList.toggle("active", r === "solicitante");
+      document.getElementById("btn-parceiro").classList.toggle("active", r === "parceiro");
+      document.getElementById("field-apartment").style.display = r === "solicitante" ? "block" : "none";
+      document.getElementById("field-pix").style.display = r === "parceiro" ? "block" : "none";
+      document.getElementById("apartment").required = r === "solicitante";
+    }
+
+    function showAlert(msg) {
+      const el = document.getElementById("alert");
+      el.textContent = msg;
+      el.className = "alert alert-error show";
+    }
+
+    async function loadCondominiums() {
+      try {
+        const res = await fetch(`${API}/cadastro/condominiums`);
+        const data = await res.json();
+        const sel = document.getElementById("condominium");
+        data.forEach(c => {
+          const opt = document.createElement("option");
+          opt.value = c.id;
+          opt.textContent = c.name;
+          sel.appendChild(opt);
+        });
+      } catch {
+        showAlert("Erro ao carregar locais.");
+      }
+    }
+
+    document.getElementById("form-cadastro").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      document.getElementById("alert").className = "alert";
+
+      const btn = document.getElementById("btn-submit");
+      btn.disabled = true;
+      btn.textContent = "Aguarde...";
+
+      const condo = parseInt(document.getElementById("condominium").value);
+      if (!condo) { showAlert("Selecione o local."); btn.disabled = false; btn.textContent = "Cadastrar"; return; }
+
+      let body, endpoint;
+      if (role === "solicitante") {
+        body = {
+          name: document.getElementById("name").value.trim(),
+          phone: document.getElementById("phone").value.trim(),
+          apartment: document.getElementById("apartment").value.trim(),
+          condominium_id: condo,
+        };
+        endpoint = "/cadastro/morador";
+      } else {
+        body = {
+          name: document.getElementById("name").value.trim(),
+          phone: document.getElementById("phone").value.trim(),
+          pix_key: document.getElementById("pix_key").value.trim() || null,
+          condominium_id: condo,
+        };
+        endpoint = "/cadastro/parceiro";
+      }
+
+      try {
+        const res = await fetch(`${API}${endpoint}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        if (!res.ok) { showAlert(data.detail || "Erro ao cadastrar."); return; }
+
+        document.getElementById("form-section").style.display = "none";
+        document.getElementById("success-title").textContent = role === "parceiro" ? "Cadastro enviado!" : "Cadastro realizado!";
+        document.getElementById("success-msg").textContent = data.message;
+        document.getElementById("success-section").style.display = "block";
+      } catch {
+        showAlert("Erro de conexão com o servidor.");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Cadastrar";
+      }
+    });
+
+    loadCondominiums();
+  </script>
+</body>
+</html>
