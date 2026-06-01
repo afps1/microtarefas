@@ -322,7 +322,7 @@ async def _confirmar_pedido(resident: models.Resident, pending: models.PendingRe
         models.Runner.id.notin_(busy_runner_ids),
     ).all()
 
-    for r in active_runners:
+    for i, r in enumerate(active_runners):
         token = secrets.token_urlsafe(16)
         magic_link = models.MagicLink(
             task_id=task.id,
@@ -335,10 +335,14 @@ async def _confirmar_pedido(resident: models.Resident, pending: models.PendingRe
 
         link = f"{APP_URL}/t/{token}"
         apt = resident.apartment
+        nome = r.name.split()[0]
         desc_extra = f"\n_{pending.description}_" if pending.description else ""
+        if i > 0:
+            import time
+            time.sleep(2)
         send_message(
             wa_phone(r.phone),
-            f"Nova tarefa disponível: *{label}*{price_info}\nLocal: {apt}{desc_extra}\n\n*Para aceitar pressione o link abaixo.*\n{link}\n\n_ATENÇÃO: Ao aceitar você concorda com os termos em postino.com.br/termos_",
+            f"{nome}, nova tarefa disponível: *{label}*{price_info}\nLocal: {apt}{desc_extra}\n\n*Para aceitar pressione o link abaixo.*\n{link}\n\n_ATENÇÃO: Ao aceitar você concorda com os termos em postino.com.br/termos_",
         )
 
     db.commit()
