@@ -144,7 +144,6 @@ def _render_page(token: str, runner: models.Runner, task: models.Task, db: Sessi
 </div>
 
 <div class="card">
-  <span class="tag">Tarefa</span>
   <div class="task-type">{label}</div>
   <div class="task-price">{price_fmt}</div>
   <div class="info-row" style="justify-content:space-between;">
