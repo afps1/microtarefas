@@ -338,7 +338,7 @@ async def _confirmar_pedido(resident: models.Resident, pending: models.PendingRe
         desc_extra = f"\n_{pending.description}_" if pending.description else ""
         send_message(
             wa_phone(r.phone),
-            f"Nova tarefa disponível: *{label}*{price_info}\nLocal: {apt}{desc_extra}\n\n*Para aceitar pressione o link abaixo.*\n{link}",
+            f"Nova tarefa disponível: *{label}*{price_info}\nLocal: {apt}{desc_extra}\n\n*Para aceitar pressione o link abaixo.*\n{link}\n\n_ATENÇÃO: Ao aceitar você concorda com os termos em postino.com.br/termos_",
         )
 
     db.commit()
