@@ -2,6 +2,7 @@ import os
 import re
 import secrets
 import logging
+import time
 from datetime import datetime, timezone, timedelta
 import zoneinfo
 BR_TZ = zoneinfo.ZoneInfo("America/Sao_Paulo")
@@ -338,7 +339,6 @@ async def _confirmar_pedido(resident: models.Resident, pending: models.PendingRe
         nome = r.name.split()[0]
         desc_extra = f"\n_{pending.description}_" if pending.description else ""
         if i > 0:
-            import time
             time.sleep(2)
         send_message(
             wa_phone(r.phone),
