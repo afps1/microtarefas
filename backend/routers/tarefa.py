@@ -89,10 +89,13 @@ def _render_page(token: str, runner: models.Runner, task: models.Task, db: Sessi
     }
 
     btn_html = ""
+    aviso_html = ""
     cancel_html = ""
     if next_status:
         btn_label = next_labels.get(next_status, next_status)
         btn_html = f'<button class="btn-primary" onclick="avancar()">{btn_label}</button>'
+    if task.status == "aceito":
+        aviso_html = '<p style="font-size:12px;color:#92400e;background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:8px 12px;margin:8px 16px 0;">AVISO: Antes de iniciar, confirme o preço do seu serviço com o solicitante usando o chat.</p>'
     if task.status in ("aceito", "em_execucao"):
         cancel_html = '<button class="btn-cancel" onclick="cancelar()">Cancelar</button>'
 
@@ -164,6 +167,7 @@ def _render_page(token: str, runner: models.Runner, task: models.Task, db: Sessi
   {btn_html}
   {cancel_html}
 </div>
+{aviso_html}
 
 {'<div class="chat-section"><div class="chat-title">Chat com solicitante</div><div class="messages" id="msgs"><div class="empty">Carregando...</div></div></div><div class="msg-input-row"><input class="msg-input" id="txt" placeholder="Mensagem..." /><button class="msg-send" onclick="enviar()">Enviar</button></div>' if task.status in ('aceito', 'em_execucao') else ''}
 
