@@ -38,13 +38,14 @@ def wa_phone(phone: str) -> str:
     return phone if phone.startswith("55") else f"55{phone}"
 
 
-def _get_link(token: str, db: Session):
-    now = datetime.now(timezone.utc)
+def _get_link(token: str, db: Session, allow_expired: bool = False):
     link = db.query(models.MagicLink).filter(models.MagicLink.token == token).first()
     if not link:
         raise HTTPException(status_code=404, detail="Link não encontrado")
-    if link.expires_at.replace(tzinfo=timezone.utc) < now:
-        raise HTTPException(status_code=410, detail="Link expirado")
+    if not allow_expired:
+        now = datetime.now(timezone.utc)
+        if link.expires_at.replace(tzinfo=timezone.utc) < now:
+            raise HTTPException(status_code=410, detail="Link expirado")
     return link
 
 
@@ -268,11 +269,70 @@ def _render_assumida() -> str:
 </html>"""
 
 
+def _render_encerrada(task: models.Task, db: Session) -> str:
+    label = task.service_type.name if task.service_type else TASK_LABELS.get(task.type, task.type)
+    status_labels = {
+        "concluido": "Concluída",
+        "recebido": "Concluída e confirmada",
+        "cancelado": "Cancelada",
+        "solicitado": "Não aceita a tempo",
+    }
+    status_txt = status_labels.get(task.status, task.status)
+    price = task.price
+    if price is None and task.service_type_id:
+        svc = db.query(models.ServiceType).filter(models.ServiceType.id == task.service_type_id).first()
+        if svc:
+            price = svc.price
+    price_fmt = f"R$ {price / 100:.2f}".replace(".", ",") if price else "a combinar"
+
+    return f"""<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tarefa — Postino</title>
+<style>
+  * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+  body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f1f5f9; min-height: 100vh; display: flex; flex-direction: column; }}
+  .header {{ background: #2563eb; color: #fff; padding: 16px 20px; font-size: 20px; font-weight: 700; }}
+  .card {{ background: #fff; border-radius: 12px; margin: 20px 16px; padding: 24px 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }}
+  .task-type {{ font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 6px; }}
+  .task-price {{ font-size: 16px; color: #16a34a; font-weight: 600; margin-bottom: 14px; }}
+  .info-row {{ display: flex; align-items: center; gap: 8px; color: #475569; font-size: 14px; margin-bottom: 6px; }}
+  .badge {{ display: inline-flex; align-items: center; gap: 6px; border-radius: 20px; padding: 4px 14px; font-size: 13px; font-weight: 600; margin-top: 14px; }}
+  .badge-ok {{ background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }}
+  .badge-cancel {{ background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; }}
+</style>
+</head>
+<body>
+<div class="header">Postino</div>
+<div class="card">
+  <div class="task-type">{label}</div>
+  <div class="task-price">{price_fmt}</div>
+  <div class="info-row">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+    Local: {task.resident.apartment}
+  </div>
+  <div class="badge {'badge-ok' if task.status in ('concluido','recebido') else 'badge-cancel'}">
+    {status_txt}
+  </div>
+</div>
+</body>
+</html>"""
+
+
 @router.get("/{token}", response_class=HTMLResponse)
 def abrir_link(token: str, db: Session = Depends(get_db)):
-    link = _get_link(token, db)
+    link = _get_link(token, db, allow_expired=True)
     runner = link.runner
     task = link.task
+
+    # Link expirado — mostra resultado da tarefa
+    now = datetime.now(timezone.utc)
+    expired = link.expires_at.replace(tzinfo=timezone.utc) < now
+
+    if expired:
+        return HTMLResponse(content=_render_encerrada(task, db))
 
     if task.status == "cancelado":
         return HTMLResponse(content=_render_assumida(), status_code=200)
