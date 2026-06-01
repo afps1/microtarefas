@@ -82,9 +82,9 @@ def _render_page(token: str, runner: models.Runner, task: models.Task, db: Sessi
     }
     next_status = VALID_TRANSITIONS.get(task.status)
     next_labels = {
-        "em_execucao": "Iniciar execução",
-        "concluido": "Marcar como concluído",
-        "recebido": "Confirmar recebimento",
+        "em_execucao": "Iniciar",
+        "concluido": "Concluído",
+        "recebido": "Recebido",
     }
 
     btn_html = ""
@@ -93,7 +93,7 @@ def _render_page(token: str, runner: models.Runner, task: models.Task, db: Sessi
         btn_label = next_labels.get(next_status, next_status)
         btn_html = f'<button class="btn-primary" onclick="avancar()">{btn_label}</button>'
     if task.status in ("aceito", "em_execucao"):
-        cancel_html = '<button class="btn-cancel" onclick="cancelar()">Cancelar tarefa</button>'
+        cancel_html = '<button class="btn-cancel" onclick="cancelar()">Cancelar</button>'
 
     status_atual = status_labels.get(task.status, task.status)
 
