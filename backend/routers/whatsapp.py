@@ -456,11 +456,38 @@ def _menu_servicos(services) -> str:
     return "• Nenhum serviço disponível no momento."
 
 
+def _parceiros_ativos(resident: models.Resident, db: Session) -> int:
+    now = datetime.utcnow()
+    busy_ids = [
+        t.runner_id for t in db.query(models.Task.runner_id).filter(
+            models.Task.status.in_(["aceito", "em_execucao"]),
+            models.Task.runner_id != None,
+        ).all()
+    ]
+    q = db.query(models.Runner).filter(
+        models.Runner.condominium_id == resident.condominium_id,
+        models.Runner.status == "approved",
+        models.Runner.available == True,
+        models.Runner.available_until > now,
+        models.Runner.phone != resident.phone,
+    )
+    if busy_ids:
+        q = q.filter(models.Runner.id.notin_(busy_ids))
+    return q.count()
+
+
+def _rodape_parceiros(count: int) -> str:
+    if count == 0:
+        return "\n\nInfelizmente agora não temos parceiros ativos. Tente mais tarde."
+    return f"\n\nNo momento temos *{count}* parceiro{'s' if count > 1 else ''} ativo{'s' if count > 1 else ''}."
+
+
 def _handle_listar_servicos(resident: models.Resident, services, db: Session):
     menu = _menu_servicos(services)
+    rodape = _rodape_parceiros(_parceiros_ativos(resident, db))
     send_message(
         wa_phone(resident.phone),
-        f"Estes são os serviços disponíveis:\n\n{menu}\n\nÉ só pedir!",
+        f"Estes são os serviços disponíveis:\n\n{menu}\n\nÉ só pedir!{rodape}",
     )
 
 
@@ -480,9 +507,10 @@ def _handle_servico_indisponivel(resident: models.Resident, services, db: Sessio
 
 def _handle_outro(resident: models.Resident, services, db: Session):
     menu = _menu_servicos(services)
+    rodape = _rodape_parceiros(_parceiros_ativos(resident, db))
     send_message(
         wa_phone(resident.phone),
-        f"Olá! Posso ajudar a solicitar serviços:\n\n{menu}\n\nÉ só me dizer o que precisa!",
+        f"Olá! Posso ajudar a solicitar serviços:\n\n{menu}\n\nÉ só me dizer o que precisa!{rodape}",
     )
 
 
