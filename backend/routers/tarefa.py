@@ -85,7 +85,7 @@ def _render_page(token: str, runner: models.Runner, task: models.Task, db: Sessi
     next_labels = {
         "em_execucao": "Iniciar",
         "concluido": "Concluído",
-        "recebido": "Recebido",
+        "recebido": "Recebi o pagamento",
     }
 
     btn_html = ""
@@ -169,7 +169,7 @@ def _render_page(token: str, runner: models.Runner, task: models.Task, db: Sessi
 </div>
 {aviso_html}
 
-{'<div class="chat-section"><div class="chat-title">Chat com solicitante</div><div class="messages" id="msgs"><div class="empty">Carregando...</div></div></div><div class="msg-input-row"><input class="msg-input" id="txt" placeholder="Mensagem..." /><button class="msg-send" onclick="enviar()">Enviar</button></div>' if task.status in ('aceito', 'em_execucao') else ''}
+{'<div class="chat-section"><div class="chat-title">Chat com solicitante</div><div class="messages" id="msgs"><div class="empty">Carregando...</div></div></div><div class="msg-input-row"><input class="msg-input" id="txt" placeholder="Mensagem..." /><button class="msg-send" onclick="enviar()">Enviar</button></div>' if task.status in ('aceito', 'em_execucao', 'concluido') else ''}
 
 <div class="toast" id="toast"></div>
 
@@ -470,7 +470,7 @@ def send_text(token: str, body: TextMessage, db: Session = Depends(get_db)):
 
     if task.runner_id != runner.id:
         raise HTTPException(status_code=403, detail="Esta tarefa não é sua")
-    if task.status not in ("aceito", "em_execucao"):
+    if task.status not in ("aceito", "em_execucao", "concluido"):
         raise HTTPException(status_code=400, detail="Tarefa não está ativa")
 
     db.add(models.TaskMessage(task_id=task.id, sender="parceiro", type="text", content=body.content))
