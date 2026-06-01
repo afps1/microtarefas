@@ -157,7 +157,7 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
     # 2. Chat durante aceito ou em_execucao
     active_task = db.query(models.Task).filter(
         models.Task.resident_id == resident.id,
-        models.Task.status.in_(["aceito", "em_execucao"]),
+        models.Task.status.in_(["aceito", "em_execucao", "concluido"]),
     ).first()
 
     if active_task:
