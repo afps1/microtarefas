@@ -116,7 +116,7 @@ def _render_page(token: str, runner: models.Runner, task: models.Task, db: Sessi
   .task-price {{ font-size: 18px; color: #16a34a; font-weight: 600; margin-bottom: 12px; }}
   .info-row {{ display: flex; align-items: center; gap: 8px; color: #475569; font-size: 14px; margin-bottom: 6px; }}
   .desc {{ color: #64748b; font-size: 14px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f1f5f9; }}
-  .status-badge {{ display: inline-flex; align-items: center; gap: 6px; background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; border-radius: 20px; padding: 4px 14px; font-size: 13px; font-weight: 600; margin-top: 12px; }}
+  .status-badge {{ display: inline-flex; align-items: center; gap: 6px; background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; border-radius: 20px; padding: 4px 14px; font-size: 13px; font-weight: 600; }}
   .actions {{ margin: 12px 16px 0; display: flex; gap: 10px; flex-shrink: 0; }}
   .btn-primary {{ flex: 1; padding: 14px; background: #2563eb; color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.15s; }}
   .btn-primary:active {{ background: #1d4ed8; }}
@@ -147,15 +147,17 @@ def _render_page(token: str, runner: models.Runner, task: models.Task, db: Sessi
   <span class="tag">Tarefa</span>
   <div class="task-type">{label}</div>
   <div class="task-price">{price_fmt}</div>
-  <div class="info-row">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-    Local: {apt}
+  <div class="info-row" style="justify-content:space-between;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      Local: {apt}
+    </div>
+    <div class="status-badge">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      {status_atual}
+    </div>
   </div>
   {'<div class="desc">' + desc + '</div>' if desc else ''}
-  <div class="status-badge">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-    {status_atual}
-  </div>
 </div>
 
 <div class="actions">
