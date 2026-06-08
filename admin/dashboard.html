@@ -475,8 +475,9 @@
 
     async function deleteRunner(id) {
       if (!confirm("Remover este parceiro?")) return;
-      await apiFetch(`/admin/condominio/runners/${id}`, { method: "DELETE" });
-      loadRunners();
+      const res = await apiFetch(`/admin/condominio/runners/${id}`, { method: "DELETE" });
+      if (res && (res.ok || res.status === 204)) { loadRunners(); }
+      else if (res) { const d = await res.json().catch(() => ({})); alert("Erro ao remover: " + (d.detail || res.status)); }
     }
 
     async function uploadRunnerPhoto(id, input) {
@@ -578,8 +579,9 @@
 
     async function deleteResident(id) {
       if (!confirm("Remover este solicitante?")) return;
-      await apiFetch(`/admin/condominio/residents/${id}`, { method: "DELETE" });
-      loadResidents();
+      const res = await apiFetch(`/admin/condominio/residents/${id}`, { method: "DELETE" });
+      if (res && (res.ok || res.status === 204)) { loadResidents(); }
+      else if (res) { const d = await res.json().catch(() => ({})); alert("Erro ao remover: " + (d.detail || res.status)); }
     }
 
     async function toggleResident(id) {
