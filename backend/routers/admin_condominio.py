@@ -331,6 +331,14 @@ def delete_resident(
     ).first()
     if not resident:
         raise HTTPException(status_code=404, detail="Morador não encontrado")
+    # cascade manual: FK em tasks, task_messages, pending_requests
+    tasks = db.query(models.Task).filter(models.Task.resident_id == resident_id).all()
+    for t in tasks:
+        db.query(models.TaskMessage).filter(models.TaskMessage.task_id == t.id).delete()
+        db.query(models.Rating).filter(models.Rating.task_id == t.id).delete()
+        db.query(models.MagicLink).filter(models.MagicLink.task_id == t.id).delete()
+        db.delete(t)
+    db.query(models.PendingRequest).filter(models.PendingRequest.resident_id == resident_id).delete()
     db.delete(resident)
     db.commit()
 
