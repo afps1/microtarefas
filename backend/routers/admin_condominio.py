@@ -250,7 +250,6 @@ def delete_runner(
         db.query(models.Rating).filter(models.Rating.task_id.in_(task_ids)).delete(synchronize_session=False)
         db.query(models.MagicLink).filter(models.MagicLink.task_id.in_(task_ids)).delete(synchronize_session=False)
     db.query(models.MagicLink).filter(models.MagicLink.runner_id == runner.id).delete(synchronize_session=False)
-    db.query(models.RunnerService).filter(models.RunnerService.runner_id == runner.id).delete(synchronize_session=False)
     db.query(models.Rating).filter(models.Rating.runner_id == runner.id).delete(synchronize_session=False)
     db.query(models.Task).filter(models.Task.runner_id == runner.id).update({"runner_id": None, "status": "solicitado"}, synchronize_session=False)
     db.delete(runner)
