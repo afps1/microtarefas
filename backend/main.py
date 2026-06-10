@@ -103,7 +103,7 @@ def ajuda_prestador():
         return FileResponse(candidate)
     return {"error": "not found"}
 
-@app.get("/ajuda-parceiro/{filename}")
+@app.get("/ajuda-parceiro-img/{filename}")
 def ajuda_prestador_file(filename: str):
     from fastapi.responses import FileResponse
     candidate = os.path.join(BASE_DIR, "ajuda_prestador", filename)
