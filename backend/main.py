@@ -87,15 +87,12 @@ def favicon():
             return FileResponse(candidate, media_type="image/png")
     return {"error": "not found"}
 
-@app.get("/image.png")
-def image_png():
+@app.get("/landing-logo.png")
+def landing_logo():
     from fastapi.responses import FileResponse
-    for candidate in [
-        os.path.join(BASE_DIR, "landing", "image.png"),
-        os.path.join(BASE_DIR, "image.png"),
-    ]:
-        if os.path.exists(candidate):
-            return FileResponse(candidate, media_type="image/png")
+    candidate = os.path.join(BASE_DIR, "landing", "logo.png")
+    if os.path.exists(candidate):
+        return FileResponse(candidate, media_type="image/png")
     return {"error": "not found"}
 
 @app.get("/termos")
