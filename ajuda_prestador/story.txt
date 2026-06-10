@@ -1,0 +1,6 @@
+1.png: Mande um olá, e informe sua disponibilidade.
+2.png: Se for do seu interesse aceite uma nova tarefa pressionando o link.
+3.png: Negocie ou confirme o preço pelo chat e pressione Iniciar. 
+4.png: Informe a conclusão da tarefa.
+5.png: Confirme o recebimento do pix.
+6.png: Pronto para uma nova tarefa.

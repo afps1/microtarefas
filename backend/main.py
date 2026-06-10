@@ -95,6 +95,22 @@ def landing_logo():
         return FileResponse(candidate, media_type="image/png")
     return {"error": "not found"}
 
+@app.get("/ajuda-prestador")
+def ajuda_prestador():
+    from fastapi.responses import FileResponse
+    candidate = os.path.join(BASE_DIR, "landing", "ajuda-prestador.html")
+    if os.path.exists(candidate):
+        return FileResponse(candidate)
+    return {"error": "not found"}
+
+@app.get("/ajuda-prestador/{filename}")
+def ajuda_prestador_file(filename: str):
+    from fastapi.responses import FileResponse
+    candidate = os.path.join(BASE_DIR, "ajuda_prestador", filename)
+    if os.path.exists(candidate):
+        return FileResponse(candidate, media_type="image/png")
+    return {"error": "not found"}
+
 @app.get("/termos")
 def termos():
     from fastapi.responses import FileResponse
