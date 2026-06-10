@@ -87,6 +87,17 @@ def favicon():
             return FileResponse(candidate, media_type="image/png")
     return {"error": "not found"}
 
+@app.get("/image.png")
+def image_png():
+    from fastapi.responses import FileResponse
+    for candidate in [
+        os.path.join(BASE_DIR, "landing", "image.png"),
+        os.path.join(BASE_DIR, "image.png"),
+    ]:
+        if os.path.exists(candidate):
+            return FileResponse(candidate, media_type="image/png")
+    return {"error": "not found"}
+
 @app.get("/termos")
 def termos():
     from fastapi.responses import FileResponse
