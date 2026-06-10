@@ -39,6 +39,7 @@ app.include_router(tarefa.router)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 app.mount("/admin", StaticFiles(directory=os.path.join(BASE_DIR, "admin"), html=True), name="admin")
 app.mount("/app", StaticFiles(directory=os.path.join(BASE_DIR, "frontend"), html=True), name="frontend")
+app.mount("/landing-files", StaticFiles(directory=os.path.join(BASE_DIR, "landing")), name="landing-files")
 
 @app.get("/health")
 def health():
