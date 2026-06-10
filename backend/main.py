@@ -95,15 +95,15 @@ def landing_logo():
         return FileResponse(candidate, media_type="image/png")
     return {"error": "not found"}
 
-@app.get("/ajuda-prestador")
+@app.get("/ajuda-parceiro")
 def ajuda_prestador():
     from fastapi.responses import FileResponse
-    candidate = os.path.join(BASE_DIR, "landing", "ajuda-prestador.html")
+    candidate = os.path.join(BASE_DIR, "landing", "ajuda-parceiro.html")
     if os.path.exists(candidate):
         return FileResponse(candidate)
     return {"error": "not found"}
 
-@app.get("/ajuda-prestador/{filename}")
+@app.get("/ajuda-parceiro/{filename}")
 def ajuda_prestador_file(filename: str):
     from fastapi.responses import FileResponse
     candidate = os.path.join(BASE_DIR, "ajuda_prestador", filename)
